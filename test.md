@@ -9,7 +9,7 @@ f(x)=x^2+1
 $$
 （2）求解：
 $$
-\frac{dy}{dx} =f'(x)= \lim_{\Delta x \to 0}\frac{\Delta y}{\Delta x}
+\frac{dy}{dx} =f'(x)= \lim_{\Delta x \to 0}{\frac{\Delta y}{\Delta x}}
 $$
 （3）解答
 $$
@@ -54,13 +54,34 @@ $$
 两边都乘以 $y$ , 换算一下
 $$
 \begin{align}
-\frac{\Delta y}{\Delta x}\cdot y &=\frac{\sqrt{x+\Delta x }- \sqrt{x}}{\Delta x}\cdot \sqrt{x}\\
-&=\frac{\sqrt{x+\Delta x}\cdot\sqrt{x}- x}{\Delta x}\\
-&=\frac{\sqrt{x^2+\Delta x\cdot x}- x}{\Delta x}
+\frac{\Delta y}{\Delta x}\cdot y &=\frac{\sqrt{x+\Delta x }- \sqrt{x}}{\Delta x}\cdot \sqrt{x}\\\\
+&=\frac{\sqrt{x+\Delta x}\cdot\sqrt{x}- x}{\Delta x}\\\\
+&=\frac{\sqrt{x^2+\Delta x\cdot x}- x}{\Delta x}\\\\
+&=\frac{(\sqrt{x^2+\Delta x\cdot x}- x)(\sqrt{x^2+\Delta x\cdot x}+ x)}{\Delta x(\sqrt{x^2+\Delta x\cdot x}+x)}\\\\
+&=\frac{(\sqrt{x^2+\Delta x\cdot x})^2- x^2}{\Delta x(\sqrt{x^2+\Delta x\cdot x}+x)}\\\\
+&=\frac{(x^2+\Delta x\cdot x)- x^2}{\Delta x(\sqrt{x^2+\Delta x\cdot x}+x)}\\\\
+&=\frac{\Delta x\cdot x}{\Delta x(\sqrt{x^2+\Delta x\cdot x}+x)}\\\\
+&=\frac{ x}{\sqrt{x^2+\Delta x\cdot x}+x}\\\\
 \end{align}
 $$
-
-这儿干不下去了，<font color='red'>求救~~~</font>
-
-
+变换一下, 将$y$ 移动到等式右侧，
+$$
+\begin{align}
+\frac{\Delta y}{\Delta x} &=\frac{ x}{\sqrt{x^2+\Delta x\cdot x}+x}\cdot \frac{1}{y}\\\\
+&=\frac{x}{\sqrt{x^2+\Delta x\cdot x}+x}\cdot \frac{1} {\sqrt{x}}\\\\
+&=\frac{x}{(\sqrt{x^2+\Delta x\cdot x}+x)\sqrt{x}}\\\\
+&=\frac{x}{\sqrt{x^3+\Delta x\cdot x^2}+x\sqrt{x}}\\\\
+\end{align}
+$$
+求导，
+$$
+\begin{align}
+\frac{dy}{dx}&=\lim_{\Delta x \to 0}{\frac{\Delta y}{\Delta x}}\\\\
+&=\lim_{\Delta x \to 0}{\frac{x}{\sqrt{x^3+\Delta x\cdot x^2}+x\sqrt{x}}}\\\\
+&=\frac{x}{\sqrt{x^3}+x\sqrt{x}}\\\\
+&=\frac{x}{x\sqrt{x}+x\sqrt{x}}\\\\
+&=\frac{x}{2x\sqrt{x}}\\\\
+&=\frac{1}{2\sqrt{x}}\\
+\end{align}
+$$
 
