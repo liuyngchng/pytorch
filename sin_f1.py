@@ -5,20 +5,25 @@
 import torch
 import math
 
-
 dtype = torch.float
 device = torch.device("cpu")
 # device = torch.device("cuda:0") # Uncomment this to run on GPU
 
 # Create random input and output data
 x = torch.linspace(-math.pi, math.pi, 2000, device=device, dtype=dtype)
+print(f"x.size={x.size()[0]}, x={x}")
 y = torch.sin(x)
+print(f"y.size={y.size()}, y={y}")
 
 # Randomly initialize weights
 a = torch.randn((), device=device, dtype=dtype)
+print(f"a={a}")
 b = torch.randn((), device=device, dtype=dtype)
+print(f"b={b}")
 c = torch.randn((), device=device, dtype=dtype)
+print(f"c={c}")
 d = torch.randn((), device=device, dtype=dtype)
+print(f"d={d}")
 
 learning_rate = 1e-6
 for t in range(2000):
@@ -28,7 +33,8 @@ for t in range(2000):
     # Compute and print loss
     loss = (y_pred - y).pow(2).sum().item()
     if t % 100 == 99:
-        print(t, loss)
+        print(f"times={t}, loss={loss}")
+        print(f"y_pred={y_pred}")
 
     # Backprop to compute gradients of a, b, c, d with respect to loss
     grad_y_pred = 2.0 * (y_pred - y)
@@ -45,3 +51,5 @@ for t in range(2000):
 
 
 print(f'Result: y = {a.item()} + {b.item()}*x + {c.item()}*x**2 + {d.item()}*x**3')
+print(f'Result: y = {a} + {b}*x + {c}*x**2 + {d}*x**3')
+print(f'type(a) = {type(a)}')
