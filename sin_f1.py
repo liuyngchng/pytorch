@@ -34,7 +34,7 @@ for t in range(2000):
     loss = (y_pred - y).pow(2).sum().item()
     if t % 100 == 99:
         print(f"times={t}, loss={loss}")
-        print(f"y_pred={y_pred}")
+        #print(f"y_pred={y_pred}")
 
     # Backprop to compute gradients of a, b, c, d with respect to loss
     grad_y_pred = 2.0 * (y_pred - y)
@@ -51,5 +51,5 @@ for t in range(2000):
 
 
 print(f'Result: y = {a.item()} + {b.item()}*x + {c.item()}*x**2 + {d.item()}*x**3')
-print(f'Result: y = {a} + {b}*x + {c}*x**2 + {d}*x**3')
+#print(f'Result: y = {a} + {b}*x + {c}*x**2 + {d}*x**3')
 print(f'type(a) = {type(a)}')
