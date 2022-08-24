@@ -34,7 +34,7 @@ for X, y in test_dataloader:
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {device} device")
-
+#exit()
 # Define model
 class NeuralNetwork(nn.Module):
     def __init__(self):
