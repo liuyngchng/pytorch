@@ -10,7 +10,7 @@ device = torch.device("cpu")
 # device = torch.device("cuda:0") # Uncomment this to run on GPU
 
 # Create random input and output data
-x = torch.linspace(-math.pi, math.pi, 2000, device=device, dtype=dtype)
+x = torch.linspace(-math.pi, 2*math.pi, 4000, device=device, dtype=dtype)
 print(f"x.size={x.size()[0]}, x={x}")
 y = torch.sin(x)
 print(f"y.size={y.size()}, y={y}")
@@ -26,7 +26,7 @@ d = torch.randn((), device=device, dtype=dtype)
 print(f"d={d}")
 
 learning_rate = 1e-6
-for t in range(2000):
+for t in range(4000):
     # Forward pass: compute predicted y
     y_pred = a + b * x + c * x ** 2 + d * x ** 3
 
