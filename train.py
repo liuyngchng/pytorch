@@ -7,7 +7,7 @@ from torchvision import datasets
 from torchvision.transforms import ToTensor
 
 # Download training data from open datasets.
-print("download train data true")
+print("download dataset for training")
 training_data = datasets.FashionMNIST(
     root="data",
     train=True,
@@ -16,7 +16,7 @@ training_data = datasets.FashionMNIST(
 )
 
 # Download test data from open datasets.
-print("download train data false")
+print("download dataset for test")
 test_data = datasets.FashionMNIST(
     root="data",
     train=False,
@@ -26,7 +26,7 @@ test_data = datasets.FashionMNIST(
 batch_size = 64
 
 # Create data loaders.
-print("crete data loaders")
+print("create data loaders for test and train")
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
@@ -38,7 +38,7 @@ for X, y in test_dataloader:
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {device} device")
 #exit()
-# Define model
+# Define model as subclass of nn.Module)
 class NeuralNetwork(nn.Module):
     def __init__(self):
         super(NeuralNetwork, self).__init__()
@@ -55,11 +55,7 @@ class NeuralNetwork(nn.Module):
         x = self.flatten(x)
         logits = self.linear_relu_stack(x)
         return logits
-print("get neural network")
-model = NeuralNetwork().to(device)
-print("model is:".format(model))
-loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
+
 def train(dataloader, model, loss_fn, optimizer):
     size = len(dataloader.dataset)
     model.train()
@@ -93,11 +89,19 @@ def test(dataloader, model, loss_fn):
     correct /= size
     print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
 
-epochs = 5
-for t in range(epochs):
-    print(f"Epoch {t+1}\n-------------------------------")
-    train(train_dataloader, model, loss_fn, optimizer)
-    test(test_dataloader, model, loss_fn)
-print("Done!")
-torch.save(model.state_dict(), "model.pth")
-print("Saved PyTorch Model State to model.pth")
+if __name__ =="__main__":
+
+    print("move neural network instance to the device")
+    model = NeuralNetwork().to(device)
+    print("model is:".format(model))
+    print("get a loss function")
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
+    epochs = 5
+    for t in range(epochs):
+        print(f"Epoch {t+1}\n-------------------------------")
+        train(train_dataloader, model, loss_fn, optimizer)
+        test(test_dataloader, model, loss_fn)
+    print("Done!")
+    torch.save(model.state_dict(), "model.pth")
+    print("Saved PyTorch Model State to model.pth")
