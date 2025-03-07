@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3.7
+#!/usr/bin/python3
 
 import torch
 from torch import nn

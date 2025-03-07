@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3.7
+#!/usr/bin/python3
 
 import torch
 from torch import nn
@@ -7,6 +7,7 @@ from torchvision import datasets
 from torchvision.transforms import ToTensor
 
 # Download training data from open datasets.
+print("download train data true")
 training_data = datasets.FashionMNIST(
     root="data",
     train=True,
@@ -15,6 +16,7 @@ training_data = datasets.FashionMNIST(
 )
 
 # Download test data from open datasets.
+print("download train data false")
 test_data = datasets.FashionMNIST(
     root="data",
     train=False,
@@ -24,6 +26,7 @@ test_data = datasets.FashionMNIST(
 batch_size = 64
 
 # Create data loaders.
+print("crete data loaders")
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
@@ -52,9 +55,9 @@ class NeuralNetwork(nn.Module):
         x = self.flatten(x)
         logits = self.linear_relu_stack(x)
         return logits
-
+print("get neural network")
 model = NeuralNetwork().to(device)
-print(model)
+print("model is:".format(model))
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
 def train(dataloader, model, loss_fn, optimizer):
