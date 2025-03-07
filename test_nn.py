@@ -40,7 +40,7 @@ if __name__ == "__main__":
     X = torch.rand(1, 28, 28, device=device)
     # 张量加载至模型
     logits = model(X)
-    # 获取预测概率
+    # 获取预测概率，样本属于某个类的概率值， Softmax 是个函数名称
     pred_probab = nn.Softmax(dim=1)(logits)
     y_pred = pred_probab.argmax(1)
     print(f"Predicted class: {y_pred}")
