@@ -31,7 +31,7 @@ class CustomDataset(Dataset):
                 for img_name in os.listdir(class_dir):
                     # add image file 
                     self.image_list.append(os.path.join(class_dir, img_name))
-                    # add label to image
+                    # add label to image, must be number, not string, remember it, string can't be the element in a matrix
                     #self.label_list.append(label)
                     self.label_list.append(self.class_to_idx[label])  # 存储数值型标签
 
