@@ -77,35 +77,7 @@ class NeuralNetwork(nn.Module):
         x = self.feature_extractor(x)
         return self.classifier(x)
 
-
-def train(dataloader, model, loss_fn, optimizer):
-    """
-    train the model use data from dataloader,
-    use loss_fn as loss function
-    """
-    size = len(dataloader.dataset)
-    model.train()
-    for batch, (X, y) in enumerate(dataloader):
-        X, y = X.to(device), y.to(device)  # 在train函数内添加
-        # Compute prediction error
-        pred = model(X)
-        loss = loss_fn(pred, y)
-
-        # Backpropagation
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        if batch % 100 == 0:
-            loss, current = loss.item(), batch * len(X)
-            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
-
-
-if __name__ == "__main__":
-
-def train_my_dt():
-    train_img_dir = "./my_dataset/train"
-    print("start load my dataset in {}".format(train_img_dir))
+def get_transformer():
     # 对图像进行一些预处理和数据增强， 便于后期使用
     my_transform = transforms.Compose([
         transforms.RandomResizedCrop(128),  # 随机裁剪缩放
@@ -115,8 +87,62 @@ def train_my_dt():
         transforms.ToTensor(),  # Convert to tensor
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # Normalize, 对图像进行归一化处理，即减去均值并除以标准差
     ])
+    return my_transform
+
+def train(data_loader, model, loss_fn, optimizer, device):
+    """
+    train the model use data from dataloader,
+    use loss_fn as loss function
+    """
+    size = len(data_loader.dataset)
+    model.train()
+    for batch, (X, y) in enumerate(data_loader):
+        X, y = X.to(device), y.to(device)
+        # Compute prediction error
+        pred = model(X)
+        loss = loss_fn(pred, y)
+
+        # back propagation
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        if batch % 100 == 0:
+            loss, current = loss.item(), batch * len(X)
+            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+
+def test(data_loader, model, loss_fn, device):
+    """
+    test the model use data from data_loader
+    :param data_loader:
+    :param model:
+    :param loss_fn:loss function
+    :param device: GPU or CPU
+    :return:
+    """
+    size = len(data_loader.dataset)
+    num_batches = len(data_loader)
+    model.eval()
+    test_loss, correct = 0, 0
+    with torch.no_grad():
+        for X, y in data_loader:
+            X, y = X.to(device), y.to(device)
+            pred = model(X)
+            test_loss += loss_fn(pred, y).item()
+            correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+    test_loss /= num_batches
+    correct /= size
+    print(f"test err: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+
+def train_my_model():
+    """
+    train model with localized data
+    :return:
+    """
+    train_img_dir = "./my_dataset/train"
+    print("start load my dataset in {}".format(train_img_dir))
     # 创建 CustomDataset 实例，加载训练数据
-    train_dataset = CustomDataset(root_dir=train_img_dir, transform=my_transform)
+    train_dataset = CustomDataset(root_dir=train_img_dir, transform=get_transformer())
     # 创建 DataLoader 实例
     print("build my data loader")
     train_data_loader = DataLoader(dataset=train_dataset, batch_size=32, shuffle=True)
@@ -139,8 +165,39 @@ def train_my_dt():
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
     epochs = 50
+    pth_model = "train_classify_model.pth"
     for t in range(epochs):
         print(f"Epoch {t + 1}\n-------------------------------")
-        train(train_data_loader, model, loss_fn, optimizer)
-    torch.save(model.state_dict(), "model.pth")
-    print("saved PyTorch Model State to model.pth")
+        train(train_data_loader, model, loss_fn, optimizer, device)
+    torch.save(model.state_dict(), pth_model)
+    print("saved PyTorch model state to file: {}".format(pth_model))
+
+
+def test_my_model():
+    """
+    test the model have been trained with test data
+    :return:
+    """
+    test_img_dir = "./my_dataset/val"
+    print("start load test dataset in {}".format(test_img_dir))
+    test_dataset = CustomDataset(root_dir=test_img_dir, transform=get_transformer())
+    test_data_loader = DataLoader(test_dataset, batch_size=32)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = NeuralNetwork().to(device)              # 先定义网络结构并迁移到设备
+    pth_model = "train_classify_model.pth"
+    model.load_state_dict(torch.load(pth_model, map_location=device))  # 保持设备一致性
+    # 优化模型加载方式
+    try:
+        model.load_state_dict(torch.load("train_classify_model.pth", map_location=device))
+    except RuntimeError as e:
+        print("加载模型时出现错误: {}".format(str(e)))
+    model.eval()  # 显式设置评估模式
+    loss_fn = nn.CrossEntropyLoss()
+    test(test_data_loader, model, loss_fn, device)
+
+
+if __name__ == "__main__":
+    # 训练模型
+    # train_my_model()
+    # 测试模型的
+    test_my_model()
