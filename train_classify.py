@@ -142,7 +142,7 @@ def test(data_loader, model, loss_fn, device):
             correct += (pred.argmax(1) == y).type(torch.float).sum().item()
     test_loss /= num_batches
     correct /= size
-    logger.info(f"test err: Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f}")
+    logger.info("test result: accuracy: {:>0.1f}%, Avg loss: {:>8f}".format(100*correct, test_loss))
 
 def train_my_model():
     """
@@ -177,7 +177,7 @@ def train_my_model():
     epochs = 50
 
     for t in range(epochs):
-        logger.info(f"Epoch {t + 1}\n-------------------------------")
+        logger.info("epoch {}\n-------------------------------".format(t+1))
         train(train_data_loader, model, loss_fn, optimizer, device)
     # PyTorch的模型保存标准做法
     pth_model = "train_classify_model.pth"

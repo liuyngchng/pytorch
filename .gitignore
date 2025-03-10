@@ -5,5 +5,5 @@ data/*
 .idea
 *.ipynb
 .ipynb_checkpoints/*
-**/.hf
-**/.hf/*
+**/*.hf
+**/*.hf/*
