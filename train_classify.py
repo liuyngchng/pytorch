@@ -8,7 +8,7 @@ from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torch import nn
 import logging.config
-from transformers import AutoModel, PreTrainedModel, PretrainedConfig
+from transformers import PreTrainedModel, PretrainedConfig
 
 # 加载配置
 logging.config.fileConfig('logging.conf')
@@ -184,7 +184,7 @@ def train_my_model():
     # torch.save(model.state_dict(), pth_model)
     # logger.info("saved PyTorch model state to file: {}".format(pth_model))
     # 保存整个模型（含配置），保存为 hf 格式
-    model.save_pretrained("hf_model_dir.hf")
+    model.save_pretrained(local_model_dir)
 
 
 def test_my_model():
@@ -198,7 +198,7 @@ def test_my_model():
     test_data_loader = DataLoader(test_dataset, batch_size=32)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # 加载事先保存在本地的 HF 格式模型
-    model = NeuralNetwork.from_pretrained("hf_model_dir.hf").to(device)
+    model = NeuralNetwork.from_pretrained(local_model_dir).to(device)
     model.eval()  # 显式设置评估模式
     loss_fn = nn.CrossEntropyLoss()
     test(test_data_loader, model, loss_fn, device)
@@ -207,6 +207,7 @@ def test_my_model():
 if __name__ == "__main__":
     # 训练模型
     logger.info("start train my model")
+    local_model_dir = "hf_format_model"
     train_my_model()
     # 使用测试数据查验模型预测的准确度
     logger.info("start test my model")
