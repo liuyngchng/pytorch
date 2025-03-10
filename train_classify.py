@@ -119,7 +119,7 @@ def train(data_loader, model, loss_fn, optimizer, device):
 
         if batch % 100 == 0:
             loss, current = loss.item(), batch * len(X)
-            logger.info(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+            logger.info("loss: {:>7f}  [{:>5d}/{:>5d}]".format(loss, current, size))
 
 def test(data_loader, model, loss_fn, device):
     """
@@ -207,7 +207,7 @@ def test_my_model():
 if __name__ == "__main__":
     # 训练模型
     logger.info("start train my model")
-    local_model_dir = "hf_format_model"
+    local_model_dir = "hf_format_model.hf"
     train_my_model()
     # 使用测试数据查验模型预测的准确度
     logger.info("start test my model")
