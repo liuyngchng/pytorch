@@ -16,6 +16,7 @@ logging.config.fileConfig('logging.conf')
 # 创建 logger
 logger = logging.getLogger(__name__)
 
+
 class CustomDataset(Dataset):
     """
         自定义dataset，加载本地图片数据作为训练的样本数据
@@ -53,8 +54,10 @@ class CustomDataset(Dataset):
             image = self.transform(image)
         return image, label
 
+
 class NeuralNetworkConfig(PretrainedConfig):
     model_type = "custom_cnn"
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.input_channels = 3
@@ -66,6 +69,7 @@ class NeuralNetwork(PreTrainedModel):
     # Define a neural network as subclass of nn.Module used to train
     """
     config_class = NeuralNetworkConfig
+
     def __init__(self, config):
         super().__init__(config)
         self.feature_extractor = nn.Sequential(
@@ -87,6 +91,7 @@ class NeuralNetwork(PreTrainedModel):
         x = self.feature_extractor(x)
         return self.classifier(x)
 
+
 def get_transformer():
     # 对图像进行一些预处理和数据增强， 便于后期使用
     my_transform = transforms.Compose([
@@ -98,6 +103,7 @@ def get_transformer():
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # Normalize, 对图像进行归一化处理，即减去均值并除以标准差
     ])
     return my_transform
+
 
 def train(data_loader, model, loss_fn, optimizer, device):
     """
@@ -121,6 +127,7 @@ def train(data_loader, model, loss_fn, optimizer, device):
             loss, current = loss.item(), batch * len(X)
             logger.info("loss: {:>7f}  [{:>5d}/{:>5d}]".format(loss, current, size))
 
+
 def test(data_loader, model, loss_fn, device):
     """
     test the model use data from data_loader
@@ -142,7 +149,8 @@ def test(data_loader, model, loss_fn, device):
             correct += (pred.argmax(1) == y).type(torch.float).sum().item()
     test_loss /= num_batches
     correct /= size
-    logger.info("test result: accuracy: {:>0.1f}%, Avg loss: {:>8f}".format(100*correct, test_loss))
+    logger.info("test result: accuracy: {:>0.1f}%, Avg loss: {:>8f}".format(100 * correct, test_loss))
+
 
 def train_my_model():
     """
@@ -177,7 +185,7 @@ def train_my_model():
     epochs = 50
 
     for t in range(epochs):
-        logger.info("epoch {}\n-------------------------------".format(t+1))
+        logger.info("epoch {}\n-------------------------------".format(t + 1))
         train(train_data_loader, model, loss_fn, optimizer, device)
     # PyTorch的模型保存标准做法
     pth_model = "train_classify_model.pth"
