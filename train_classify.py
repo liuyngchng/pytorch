@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 class CustomDataset(Dataset):
     """
-        自定义dataset，加载本地图片数据作为训练的样本数据
+    自定义dataset，加载本地图片数据作为训练的样本数据
     """
 
     def __init__(self, root_dir, transform=None):
