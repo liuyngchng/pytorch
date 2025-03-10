@@ -8,14 +8,13 @@ from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torch import nn
 import logging.config
-from transformers import AutoModel
+from transformers import AutoModel, PreTrainedModel, PretrainedConfig
 
 # 加载配置
 logging.config.fileConfig('logging.conf')
 
 # 创建 logger
 logger = logging.getLogger(__name__)
-
 
 class CustomDataset(Dataset):
     """
@@ -52,19 +51,25 @@ class CustomDataset(Dataset):
 
         if self.transform:
             image = self.transform(image)
-
         return image, label
 
+class NeuralNetworkConfig(PretrainedConfig):
+    model_type = "custom_cnn"
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.input_channels = 3
+        self.num_classes = 10
 
-class NeuralNetwork(nn.Module):
+
+class NeuralNetwork(PreTrainedModel):
     """
     # Define a neural network as subclass of nn.Module used to train
     """
-
-    def __init__(self):
-        super().__init__()
+    config_class = NeuralNetworkConfig
+    def __init__(self, config):
+        super().__init__(config)
         self.feature_extractor = nn.Sequential(
-            nn.Conv2d(3, 64, 3, padding=1),
+            nn.Conv2d(config.input_channels, 64, 3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(2),
             nn.Conv2d(64, 128, 3, padding=1),
@@ -75,7 +80,7 @@ class NeuralNetwork(nn.Module):
             nn.Flatten(),
             nn.Linear(128 * 32 * 32, 256),
             nn.Dropout(0.5),
-            nn.Linear(256, 10)
+            nn.Linear(256, config.num_classes)
         )
 
     def forward(self, x):
@@ -137,7 +142,7 @@ def test(data_loader, model, loss_fn, device):
             correct += (pred.argmax(1) == y).type(torch.float).sum().item()
     test_loss /= num_batches
     correct /= size
-    logger.info(f"test err: Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+    logger.info(f"test err: Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f}")
 
 def train_my_model():
     """
@@ -153,30 +158,33 @@ def train_my_model():
     train_data_loader = DataLoader(dataset=train_dataset, batch_size=32, shuffle=True)
     # to check data loaded to train_loader
     for images, labels in train_data_loader:
-        logger.info(images.shape, labels)
+        logger.info("images.shape: {}, labels: {}".format(images.shape, labels))
 
     for X, y in train_data_loader:
-        logger.info(f"Shape of X [N, C, H, W]: {X.shape}")
-        logger.info(f"y: {y}")
+        logger.info("Shape of X [N, C, H, W]: {}".format(X.shape))
+        logger.info("y: {}".format(y))
         break
 
     # Get cpu or gpu device for training.
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    logger.info(f"Using {device} device")
-    logger.info("move neural network instance to the device")
-    model = NeuralNetwork().to(device)
-    # model = AutoModel.from_pretrained("base_model_name")  # 例如 "bert-base-uncased"
+    logger.info("Using device {}".format(device))
+    logger.info("move neural network instance to the device: {}".format(device))
+    model = NeuralNetwork(NeuralNetworkConfig()).to(device)
     logger.info("model is:".format(model))
     logger.info("get a loss function")
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
     epochs = 50
-    pth_model = "train_classify_model.pth"
+
     for t in range(epochs):
         logger.info(f"Epoch {t + 1}\n-------------------------------")
         train(train_data_loader, model, loss_fn, optimizer, device)
-    torch.save(model.state_dict(), pth_model)
-    logger.info("saved PyTorch model state to file: {}".format(pth_model))
+    # PyTorch的模型保存标准做法
+    pth_model = "train_classify_model.pth"
+    # torch.save(model.state_dict(), pth_model)
+    # logger.info("saved PyTorch model state to file: {}".format(pth_model))
+    # 保存整个模型（含配置），保存为 hf 格式
+    model.save_pretrained("hf_model_dir.hf")
 
 
 def test_my_model():
@@ -189,7 +197,9 @@ def test_my_model():
     test_dataset = CustomDataset(root_dir=test_img_dir, transform=get_transformer())
     test_data_loader = DataLoader(test_dataset, batch_size=32)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = NeuralNetwork().to(device)              # 先定义网络结构并迁移到设备
+    # model = NeuralNetwork(NeuralNetworkConfig()).to(device)
+    # 加载事先保存在本地的 HF 格式模型
+    model = NeuralNetwork.from_pretrained("hf_model_dir.hf").to(device)
     pth_model = "train_classify_model.pth"
     model.load_state_dict(torch.load(pth_model, map_location=device))  # 保持设备一致性
     # 优化模型加载方式
@@ -204,6 +214,8 @@ def test_my_model():
 
 if __name__ == "__main__":
     # 训练模型
-    # train_my_model()
+    logger.info("start train my model")
+    train_my_model()
     # 使用测试数据查验模型预测的准确度
+    logger.info("start test my model")
     test_my_model()

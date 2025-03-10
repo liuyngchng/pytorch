@@ -44,7 +44,8 @@ class CustomModel(PreTrainedModel, ABC):
 
 
 if __name__ == "__main__":
-    # 将自定义pytorch 模型转换为Hugging Face格式并保存,还没有调通
+    # 将自定义pytorch 模型转换为Hugging Face格式并保存,
+    # todo 还没有调通
     custom_model = CustomModel(config)
     state_dict = torch.load('./train_classify_model.pth')
     custom_model.load_state_dict(state_dict, strict=False)  # 加载权重, strict=False 表示可以部分加载
