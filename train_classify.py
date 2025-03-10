@@ -3,13 +3,17 @@
 
 import os
 import torch
-import pandas as pd
 import torchvision.transforms as transforms
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torch import nn
-from torchvision import datasets
-from torchvision.transforms import ToTensor
+import logging.config
+
+# 加载配置
+logging.config.fileConfig('logging.conf')
+
+# 创建 logger
+logger = logging.getLogger(__name__)
 
 
 class CustomDataset(Dataset):
@@ -27,7 +31,7 @@ class CustomDataset(Dataset):
 
         # 遍历每一个类别文件夹
         for label in os.listdir(root_dir):
-            print("process dir label {}".format(label))
+            logger.info("process dir label {}".format(label))
             class_dir = os.path.join(root_dir, label)
             if os.path.isdir(class_dir):
                 for img_name in os.listdir(class_dir):
@@ -109,7 +113,7 @@ def train(data_loader, model, loss_fn, optimizer, device):
 
         if batch % 100 == 0:
             loss, current = loss.item(), batch * len(X)
-            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+            logger.info(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
 def test(data_loader, model, loss_fn, device):
     """
@@ -132,7 +136,7 @@ def test(data_loader, model, loss_fn, device):
             correct += (pred.argmax(1) == y).type(torch.float).sum().item()
     test_loss /= num_batches
     correct /= size
-    print(f"test err: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+    logger.info(f"test err: Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
 
 def train_my_model():
     """
@@ -140,37 +144,37 @@ def train_my_model():
     :return:
     """
     train_img_dir = "./my_dataset/train"
-    print("start load my dataset in {}".format(train_img_dir))
+    logger.info("start load my dataset in {}".format(train_img_dir))
     # 创建 CustomDataset 实例，加载训练数据
     train_dataset = CustomDataset(root_dir=train_img_dir, transform=get_transformer())
     # 创建 DataLoader 实例
-    print("build my data loader")
+    logger.info("build my data loader")
     train_data_loader = DataLoader(dataset=train_dataset, batch_size=32, shuffle=True)
     # to check data loaded to train_loader
     for images, labels in train_data_loader:
-        print(images.shape, labels)
+        logger.info(images.shape, labels)
 
     for X, y in train_data_loader:
-        print(f"Shape of X [N, C, H, W]: {X.shape}")
-        print(f"y: {y}")
+        logger.info(f"Shape of X [N, C, H, W]: {X.shape}")
+        logger.info(f"y: {y}")
         break
 
     # Get cpu or gpu device for training.
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"Using {device} device")
-    print("move neural network instance to the device")
+    logger.info(f"Using {device} device")
+    logger.info("move neural network instance to the device")
     model = NeuralNetwork().to(device)
-    print("model is:".format(model))
-    print("get a loss function")
+    logger.info("model is:".format(model))
+    logger.info("get a loss function")
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
     epochs = 50
     pth_model = "train_classify_model.pth"
     for t in range(epochs):
-        print(f"Epoch {t + 1}\n-------------------------------")
+        logger.info(f"Epoch {t + 1}\n-------------------------------")
         train(train_data_loader, model, loss_fn, optimizer, device)
     torch.save(model.state_dict(), pth_model)
-    print("saved PyTorch model state to file: {}".format(pth_model))
+    logger.info("saved PyTorch model state to file: {}".format(pth_model))
 
 
 def test_my_model():
@@ -179,7 +183,7 @@ def test_my_model():
     :return:
     """
     test_img_dir = "./my_dataset/val"
-    print("start load test dataset in {}".format(test_img_dir))
+    logger.info("start load test dataset in {}".format(test_img_dir))
     test_dataset = CustomDataset(root_dir=test_img_dir, transform=get_transformer())
     test_data_loader = DataLoader(test_dataset, batch_size=32)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -190,7 +194,7 @@ def test_my_model():
     try:
         model.load_state_dict(torch.load("train_classify_model.pth", map_location=device))
     except RuntimeError as e:
-        print("加载模型时出现错误: {}".format(str(e)))
+        logger.error("error occurred in load model: {}".format(str(e)))
     model.eval()  # 显式设置评估模式
     loss_fn = nn.CrossEntropyLoss()
     test(test_data_loader, model, loss_fn, device)
