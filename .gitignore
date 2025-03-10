@@ -1,5 +1,10 @@
 **/*.pth
 ./data
 data/*
+<<<<<<< HEAD
 .idea/*
 .idea
+=======
+*.ipynb
+.ipynb_checkpoints/*
+>>>>>>> db7c25a529dcbc00aa812c7a0a3c3dbc063271fd
