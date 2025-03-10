@@ -1,5 +1,6 @@
-# !/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 from abc import ABC
 from torch import nn
 import torch
@@ -54,3 +55,5 @@ if __name__ == "__main__":
     print(model)
     # # 这儿会请求网路，从 huggingface.co 下载 bert-base-uncased 模型，如果本地没有的话
     # tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')  # 根据你的任务选择合适的tokenizer
+    print("load tokenizer")
+    tokenizer = AutoTokenizer.from_pretrained("../bge-large-zh-v1.5")
