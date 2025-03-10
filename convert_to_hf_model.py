@@ -44,14 +44,16 @@ class CustomModel(PreTrainedModel, ABC):
 
 
 if __name__ == "__main__":
-    # 将自定义pytorch 模型转换为Hugging Face格式并保存
+    # 将自定义pytorch 模型转换为Hugging Face格式并保存,还没有调通
     custom_model = CustomModel(config)
     state_dict = torch.load('./train_classify_model.pth')
     custom_model.load_state_dict(state_dict, strict=False)  # 加载权重, strict=False 表示可以部分加载
-    custom_model.save_pretrained('./train_classify_model.hf')  # 保存模型和配置到指定目录
+    custom_model.save_pretrained('./custom_model.hf')  # 保存模型和配置到指定目录
+
 
     # 加载模型
-    model = AutoModelForSequenceClassification.from_pretrained('./train_classify_model.hf')
+    model = AutoModelForSequenceClassification.from_pretrained('./custom_model.hf')
+    model.save_pretrained('./hf_formatted_model.hf')  # 重新生成标准格式
     print(model)
     # # 这儿会请求网路，从 huggingface.co 下载 bert-base-uncased 模型，如果本地没有的话
     # tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')  # 根据你的任务选择合适的tokenizer
