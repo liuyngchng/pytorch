@@ -197,16 +197,8 @@ def test_my_model():
     test_dataset = CustomDataset(root_dir=test_img_dir, transform=get_transformer())
     test_data_loader = DataLoader(test_dataset, batch_size=32)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # model = NeuralNetwork(NeuralNetworkConfig()).to(device)
     # 加载事先保存在本地的 HF 格式模型
     model = NeuralNetwork.from_pretrained("hf_model_dir.hf").to(device)
-    pth_model = "train_classify_model.pth"
-    model.load_state_dict(torch.load(pth_model, map_location=device))  # 保持设备一致性
-    # 优化模型加载方式
-    try:
-        model.load_state_dict(torch.load("train_classify_model.pth", map_location=device))
-    except RuntimeError as e:
-        logger.error("error occurred in load model: {}".format(str(e)))
     model.eval()  # 显式设置评估模式
     loss_fn = nn.CrossEntropyLoss()
     test(test_data_loader, model, loss_fn, device)
