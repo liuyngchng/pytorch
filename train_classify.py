@@ -8,6 +8,7 @@ from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torch import nn
 import logging.config
+from transformers import AutoModel
 
 # 加载配置
 logging.config.fileConfig('logging.conf')
@@ -164,6 +165,7 @@ def train_my_model():
     logger.info(f"Using {device} device")
     logger.info("move neural network instance to the device")
     model = NeuralNetwork().to(device)
+    # model = AutoModel.from_pretrained("base_model_name")  # 例如 "bert-base-uncased"
     logger.info("model is:".format(model))
     logger.info("get a loss function")
     loss_fn = nn.CrossEntropyLoss()
