@@ -203,5 +203,5 @@ def test_my_model():
 if __name__ == "__main__":
     # 训练模型
     # train_my_model()
-    # 测试模型的
+    # 使用测试数据查验模型预测的准确度
     test_my_model()
