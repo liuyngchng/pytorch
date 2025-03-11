@@ -2,15 +2,13 @@
 # -*- coding: utf-8 -*-
 
 import os
-from abc import ABC
-
 import torch
 import torchvision.transforms as transforms
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torch import nn
 import logging.config
-from transformers import PreTrainedModel, PretrainedConfig
+from transformers import AutoModel, AutoProcessor  # 主要修改点
 
 # 加载配置
 logging.config.fileConfig('logging.conf')
@@ -20,29 +18,20 @@ logger = logging.getLogger(__name__)
 
 
 class CustomDataset(Dataset):
-    """
-    自定义dataset，加载本地图片数据作为训练的样本数据
-    """
-
-    def __init__(self, root_dir, transform=None):
+    def __init__(self, root_dir, processor):
         self.root_dir = root_dir
-        self.transform = transform
+        self.processor = processor
         self.classes = sorted(os.listdir(root_dir))
         self.class_to_idx = {cls_name: i for i, cls_name in enumerate(self.classes)}
         self.image_list = []
         self.label_list = []
 
-        # 遍历每一个类别文件夹
         for label in os.listdir(root_dir):
-            logger.info("process dir label {}".format(label))
             class_dir = os.path.join(root_dir, label)
             if os.path.isdir(class_dir):
                 for img_name in os.listdir(class_dir):
-                    # add image file 
                     self.image_list.append(os.path.join(class_dir, img_name))
-                    # add label to image, must be number, not string, remember it, string can't be the element in a matrix
-                    # self.label_list.append(label)
-                    self.label_list.append(self.class_to_idx[label])  # 存储数值型标签
+                    self.label_list.append(self.class_to_idx[label])
 
     def __len__(self):
         return len(self.image_list)
@@ -50,49 +39,27 @@ class CustomDataset(Dataset):
     def __getitem__(self, idx):
         img_path = self.image_list[idx]
         image = Image.open(img_path).convert('RGB')
-        label = self.label_list[idx]
-
-        if self.transform:
-            image = self.transform(image)
-        return image, label
+        return self.processor(images=image, text="", return_tensors="pt"), self.label_list[idx]
 
 
-class NeuralNetworkConfig(PretrainedConfig):
-    model_type = "custom_cnn"
+class VisionModel(nn.Module):  # 修改为通用Module
+    def __init__(self):
+        super().__init__()
+        self.model = AutoModel.from_pretrained("llama3.2-vision:11B")  # 替换为实际模型名称
+        self.classifier = nn.Linear(self.model.config.hidden_size, len(your_classes))  # 根据类别数修改
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.input_channels = 3
-        self.num_classes = 10
+    def forward(self, inputs):
+        outputs = self.model(**inputs)
+        return self.classifier(outputs.last_hidden_state[:, 0, :])
 
 
-class NeuralNetwork(PreTrainedModel, ABC):
-    """
-    # Define a neural network as subclass of nn.Module used to train
-    """
-    config_class = NeuralNetworkConfig
+def train_my_model():
+    processor = AutoProcessor.from_pretrained("llama3.2-vision:11B")  # 加载处理器
+    train_dataset = CustomDataset("./my_dataset/train", processor)
+    train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True)  # 减小batch_size
 
-    def __init__(self, config):
-        super().__init__(config)
-        self.feature_extractor = nn.Sequential(
-            nn.Conv2d(config.input_channels, 64, 3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
-            nn.Conv2d(64, 128, 3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2)
-        )
-        self.classifier = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(128 * 32 * 32, 256),
-            nn.Dropout(0.5),
-            nn.Linear(256, config.num_classes)
-        )
-
-    def forward(self, x):
-        x = self.feature_extractor(x)
-        return self.classifier(x)
-
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model = VisionModel().to(device)
 
 def get_transformer():
     # 对图像进行一些预处理和数据增强， 便于后期使用
@@ -179,7 +146,7 @@ def train_my_model():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     logger.info("Using device {}".format(device))
     logger.info("move neural network instance to the device: {}".format(device))
-    model = NeuralNetwork(NeuralNetworkConfig()).to(device)
+    model = VisionModel().to(device)
     logger.info("model is:".format(model))
     logger.info("get a loss function")
     loss_fn = nn.CrossEntropyLoss()
@@ -222,3 +189,4 @@ if __name__ == "__main__":
     # 使用测试数据查验模型预测的准确度
     logger.info("start test my model")
     test_my_model()
+
