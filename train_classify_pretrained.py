@@ -37,16 +37,18 @@ class CustomDataset(Dataset):
         return len(self.image_list)
 
     def __getitem__(self, idx):
-        img_path = self.image_list[idx]
-        image = Image.open(img_path).convert('RGB')
-        return self.processor(images=image, text="", return_tensors="pt"), self.label_list[idx]
+        processed_data = self.processor(images=image, return_tensors="pt")
+        return {
+            "pixel_values": processed_data.pixel_values.squeeze(),
+            "labels": torch.tensor(self.label_list[idx])
+        }
 
 
 class VisionModel(nn.Module):  # 修改为通用Module
     def __init__(self):
         super().__init__()
-        self.model = AutoModel.from_pretrained("llama3.2-vision:11B")  # 替换为实际模型名称
-        self.classifier = nn.Linear(self.model.config.hidden_size, len(your_classes))  # 根据类别数修改
+        self.vision_model = AutoModel.from_pretrained("llava-hf/llama-3-vision-11B")  # 修正模型名称
+        self.classifier = nn.Linear(self.vision_model.config.hidden_size, num_classes)
 
     def forward(self, inputs):
         outputs = self.model(**inputs)
@@ -54,12 +56,12 @@ class VisionModel(nn.Module):  # 修改为通用Module
 
 
 def train_my_model():
-    processor = AutoProcessor.from_pretrained("llama3.2-vision:11B")  # 加载处理器
+    processor = AutoProcessor.from_pretrained("llava-hf/llama-3-vision-11B")
     train_dataset = CustomDataset("./my_dataset/train", processor)
     train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True)  # 减小batch_size
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = VisionModel().to(device)
+    model = VisionModel(num_classes=len(train_dataset.classes))  # 动态获取类别数
 
 def get_transformer():
     # 对图像进行一些预处理和数据增强， 便于后期使用
@@ -79,22 +81,11 @@ def train(data_loader, model, loss_fn, optimizer, device):
     train the model use data from dataloader,
     use loss_fn as loss function
     """
-    size = len(data_loader.dataset)
-    model.train()
-    for batch, (X, y) in enumerate(data_loader):
-        X, y = X.to(device), y.to(device)
-        # Compute prediction error
-        pred = model(X)
-        loss = loss_fn(pred, y)
-
-        # back propagation
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        if batch % 100 == 0:
-            loss, current = loss.item(), batch * len(X)
-            logger.info("loss: {:>7f}  [{:>5d}/{:>5d}]".format(loss, current, size))
+    for batch, batch_data in enumerate(data_loader):
+        pixel_values = batch_data["pixel_values"].to(device)
+        labels = batch_data["labels"].to(device)
+        outputs = model(pixel_values)
+        loss = loss_fn(outputs, labels)
 
 
 def test(data_loader, model, loss_fn, device):
