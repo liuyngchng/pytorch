@@ -30,4 +30,8 @@ git clone https://www.modelscope.cn/deepseek-ai/DeepSeek-R1-Distill-Llama-8B.git
 ```shell
 # 通过 CUDA_VISIBLE_DEVICES 指定 GPU
 CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=1 vllm serve deepseek-ai/DeepSeek-R1-Distill-Llama-8B --tensor-parallel-size 1 --max-model-len 8096 --gpu-memory-utilization 0.8 --enforce-eager
+
+# --gpu-memory-utilization 0.4 out of memory
+CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=1 vllm serve deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B --tensor-parallel-size 1 --max-model-len 32768 --gpu-memory-utilization 0.5 --enforce-eager
+
 ```
