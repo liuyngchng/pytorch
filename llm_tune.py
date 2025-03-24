@@ -7,10 +7,11 @@ watch -n 1 nvidia-smi 观察 GPU 加载情况
 """
 import os
 os.environ["CUDA_VISIBLE_DEVICES"]='GPU-99b29e6e-b59b-2d02-714f-16bc83525830'
+import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer, pipeline, \
     DataCollatorForLanguageModeling
 from datasets import load_dataset
-
+from peft import LoraConfig, get_peft_model
 
 def train():
     """
@@ -19,7 +20,19 @@ def train():
     :return:
     """
     # 加载本地模型和分词器
-    model = AutoModelForCausalLM.from_pretrained("../DeepSeek-R1-Distill-Qwen-1.5B")
+    model = AutoModelForCausalLM.from_pretrained(
+        "../DeepSeek-R1-Distill-Qwen-1.5B",
+        torch_dtype=torch.float16,          # 降低精度，减少显存消耗量
+        load_in_4bit=True,                  # 4bit量化（需bitsandbytes库）
+        device_map="auto"                   # 自动分配设备
+    )
+
+    peft_config = LoraConfig(
+        r=8,
+        lora_alpha=32,
+        target_modules=["q_proj", "v_proj"]
+    )
+    model = get_peft_model(model, peft_config)  # 原模型需先加载量化
     tokenizer = AutoTokenizer.from_pretrained("../DeepSeek-R1-Distill-Qwen-1.5B")
 
     # 加载训练数据
