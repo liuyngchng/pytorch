@@ -4,12 +4,15 @@
 通过 nvidia-smi -L 获取指定 GPU 的 UUID
 
 watch -n 1 nvidia-smi 观察 GPU 加载情况
+训练前执行 nvidia-smi -pm 1启用持久模式
+使用nohup后台运行避免ssh中断影响
+添加try-except块捕捉CUDA错误并自动重试
 """
 import os
 os.environ["CUDA_VISIBLE_DEVICES"]='GPU-99b29e6e-b59b-2d02-714f-16bc83525830'
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer, pipeline, \
-    DataCollatorForLanguageModeling
+    DataCollatorForLanguageModeling, BitsAndBytesConfig
 from datasets import load_dataset
 from peft import LoraConfig, get_peft_model
 
@@ -23,10 +26,14 @@ def train():
     model = AutoModelForCausalLM.from_pretrained(
         "../DeepSeek-R1-Distill-Qwen-1.5B",
         torch_dtype=torch.float16,          # 降低精度，减少显存消耗量
-        load_in_4bit=True,                  # 4bit量化（需bitsandbytes库）
-        device_map="auto"                   # 自动分配设备
+        # device_map="auto",                # 自动分配设备
+        device_map = {"":0},                # 强制使用单一设备
+        quantization_config=BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=torch.float16
+        )
     )
-
+    # PEFT 微调
     peft_config = LoraConfig(
         r=8,
         lora_alpha=32,
@@ -44,7 +51,9 @@ def train():
     training_args = TrainingArguments(
         output_dir="./txt_trainer",
         num_train_epochs=3,
-        per_device_train_batch_size=2,
+        per_device_train_batch_size=1,
+        gradient_accumulation_steps=2,
+        gradient_checkpointing=True,
         learning_rate=3e-5,
         save_total_limit=2,
     )
