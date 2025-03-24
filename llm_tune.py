@@ -47,7 +47,7 @@ def train():
 def test():
     generator = pipeline('text-generation', model='./article_trainer',
                          tokenizer='./article_trainer',     # 加载保存的分词器
-                         device=1                           # 指定 GPU
+                         device=0                           # 指定 GPU
                          )
     result = generator("请写一篇xxxx的文章：", max_length=300)
     print(result[0]['generated_text'])
