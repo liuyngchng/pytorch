@@ -7,3 +7,4 @@ data/*
 .ipynb_checkpoints/*
 **/*.hf
 **/*.hf/*
+txt_trainer
