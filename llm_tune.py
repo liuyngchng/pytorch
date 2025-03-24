@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+通过 nvidia-smi -L 获取指定 GPU 的 UUID
 
+watch -n 1 nvidia-smi 观察 GPU 加载情况
+"""
+import os
+os.environ["CUDA_VISIBLE_DEVICES"]='GPU-99b29e6e-b59b-2d02-714f-16bc83525830'
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer, pipeline, \
     DataCollatorForLanguageModeling
 from datasets import load_dataset
@@ -23,7 +29,7 @@ def train():
 
     # 设置训练参数
     training_args = TrainingArguments(
-        output_dir="./article_trainer",
+        output_dir="./txt_trainer",
         num_train_epochs=3,
         per_device_train_batch_size=2,
         learning_rate=3e-5,
@@ -45,11 +51,11 @@ def train():
 
 
 def test():
-    generator = pipeline('text-generation', model='./article_trainer',
-                         tokenizer='./article_trainer',     # 加载保存的分词器
+    generator = pipeline('text-generation', model='./txt_trainer',
+                         tokenizer='./txt_trainer',     # 加载保存的分词器
                          device=0                           # 指定 GPU
                          )
-    result = generator("请写一篇xxxx的文章：", max_length=300)
+    result = generator("如何缴费？：", max_length=300)
     print(result[0]['generated_text'])
 
 

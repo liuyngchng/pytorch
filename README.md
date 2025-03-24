@@ -35,3 +35,8 @@ CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=1 vllm serve deepseek-ai/DeepS
 CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=1 vllm serve deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B --tensor-parallel-size 1 --max-model-len 32768 --gpu-memory-utilization 0.5 --enforce-eager
 
 ```
+# 6. train
+
+```sh
+watch -n 1 nvidia-smi
+```
