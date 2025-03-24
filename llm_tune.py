@@ -4,7 +4,7 @@
 通过 nvidia-smi -L 获取指定 GPU 的 UUID
 
 watch -n 1 nvidia-smi 观察 GPU 加载情况
-训练前执行 nvidia-smi -pm 1启用持久模式
+训练前执行 sudo nvidia-smi -pm 1启用持久模式
 使用nohup后台运行避免ssh中断影响
 添加try-except块捕捉CUDA错误并自动重试
 """
