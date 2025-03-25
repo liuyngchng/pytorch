@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-通过 nvidia-smi -L 获取指定 GPU 的 UUID
+（1）硬件
+        1）Geforce RXT 3090Ti，功率消耗350W（额定450W）, 显存占用 16GB(共24GB)
+        2）Thinkpad T14 笔记本外接显卡, 1th Gen Intel® Core™ i7-1165G7 × 8， 16GB 内存，
+（2）运行
+        1）通过 nvidia-smi -L 获取指定 GPU 的 UUID
 
-watch -n 1 nvidia-smi 观察 GPU 加载情况
-训练前执行 sudo nvidia-smi -pm 1启用持久模式
-使用nohup后台运行避免ssh中断影响
-添加try-except块捕捉CUDA错误并自动重试
-1.json format { "instruction": "your instruction", "input": "you input txt", "output": "something want tobe outputed" }
+        2）watch -n 1 nvidia-smi 观察 GPU 加载情况，实施检测功率、显存占用情况
+
+        3）训练前执行 sudo nvidia-smi -pm 1启用持久模式
+
+        4）使用nohup后台运行避免ssh中断影响
+        5）添加try-except块捕捉CUDA错误并自动重试
+        6）1.json format { "instruction": "your instruction", "input": "you input txt", "output": "something want tobe outputed" }
 """
 import os
 os.environ["CUDA_VISIBLE_DEVICES"]='GPU-99b29e6e-b59b-2d02-714f-16bc83525830'
