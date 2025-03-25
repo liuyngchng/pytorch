@@ -36,7 +36,7 @@ def train():
     logger.info("load local model and tokenizer")
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype=torch.bfloat16,  # 优先bfloat16 > float16
+        torch_dtype=torch.bfloat16,  # 优先float32 > bfloat16 > float16
         device_map="auto"
     )
 
@@ -73,7 +73,7 @@ def train():
     training_args = TrainingArguments(
         output_dir="./txt_trainer",
         num_train_epochs=300,
-        per_device_train_batch_size=1,
+        per_device_train_batch_size=1,  # 1, 2, 4 值越大，训练速度越快，同时可能提升模型稳定性，进而可能提高精度
         gradient_accumulation_steps=2,
         # gradient_checkpointing=True,
         learning_rate=3e-5,
@@ -100,7 +100,7 @@ def test():
     logger.info("load base model")
     base_model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype=torch.bfloat16,  # 优先bfloat16 > float16
+        torch_dtype=torch.bfloat16,  # 优先 float32 > bfloat16 > float16
         device_map="auto"
     )
     logger.info("PEFT base model")
@@ -121,5 +121,5 @@ def test():
 
 
 if __name__ == "__main__":
-    # train()
+    train()
     test()
