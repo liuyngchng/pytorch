@@ -18,7 +18,6 @@ from datasets import load_dataset
 from peft import LoraConfig, get_peft_model, PeftModel
 import logging.config
 
-# model_name = "../DeepSeek-R1-Distill-Qwen-1.5B"
 model_name = "../DeepSeek-R1-Distill-Llama-8B"
 
 # 加载配置
