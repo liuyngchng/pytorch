@@ -39,4 +39,7 @@ CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=1 vllm serve deepseek-ai/DeepS
 
 ```sh
 watch -n 1 nvidia-smi
+
+pip install flash-attn --no-build-isolation
+sudo apt install nvidia-cuda-toolkit
 ```

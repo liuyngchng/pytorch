@@ -36,8 +36,9 @@ def train():
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         torch_dtype=torch.float16,          # 降低精度，减少显存消耗量
-        # device_map="auto",                # 自动分配设备
-        device_map = {"":0},                # 强制使用单一设备
+        device_map="auto",                  # 自动分配设备
+        attn_implementation="flash_attention_2",
+        # device_map = {"":0},                # 强制使用单一设备
         quantization_config=BitsAndBytesConfig(
             load_in_4bit=True,
             bnb_4bit_compute_dtype=torch.float16
@@ -93,11 +94,7 @@ def test():
         model_name,
         torch_dtype=torch.float16,              # 降低精度，减少显存消耗量
         device_map="auto",                      # 自动分配设备
-        # device_map = {"":0},                  # 强制使用单一设备
-        quantization_config=BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_compute_dtype=torch.float16
-        )
+        # attn_implementation="flash_attention_2",    # pip install flash_attn
     )
     logger.info("PEFT base model")
     peft_model = (PeftModel.from_pretrained(base_model, "./txt_trainer")
