@@ -18,8 +18,8 @@ from datasets import load_dataset
 from peft import LoraConfig, get_peft_model, PeftModel
 import logging.config
 
-model_name = "../DeepSeek-R1-Distill-Qwen-1.5B"
-# model_name = "../DeepSeek-R1-Distill-Llama-8B"
+# model_name = "../DeepSeek-R1-Distill-Qwen-1.5B"
+model_name = "../DeepSeek-R1-Distill-Llama-8B"
 
 # 加载配置
 logging.config.fileConfig('logging.conf')
@@ -39,7 +39,8 @@ def train():
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         torch_dtype=torch.bfloat16,  # 优先 float32 > bfloat16 > float16
-        device_map="auto"
+        # device_map="auto",
+        device_map={"": 0},
     )
 
     # 降低精度，节约显存
@@ -74,7 +75,7 @@ def train():
     training_args = TrainingArguments(
         output_dir="./txt_trainer",
         num_train_epochs=300,
-        per_device_train_batch_size=2,  # 1, 2, 4 值越大，训练速度越快，同时可能提升模型稳定性，进而可能提高精度
+        per_device_train_batch_size=1,  # 1, 2, 4 值越大，训练速度越快，同时可能提升模型稳定性，进而可能提高精度
         gradient_accumulation_steps=2,
         # gradient_checkpointing=True,
         learning_rate=3e-5,
@@ -102,7 +103,8 @@ def test():
     base_model = AutoModelForCausalLM.from_pretrained(
         model_name,
         torch_dtype=torch.bfloat16,  # 优先 float32 > bfloat16 > float16
-        device_map="auto"
+        # device_map="auto",
+        device_map={"": 0},
     )
     logger.info("PEFT base model")
     peft_model = (PeftModel.from_pretrained(base_model, "./txt_trainer")
