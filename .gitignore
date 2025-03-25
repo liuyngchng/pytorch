@@ -9,4 +9,4 @@ data/*
 **/*.hf/*
 txt_trainer
 nohup.out
-*.jsonl
+#*.jsonl

@@ -26,6 +26,13 @@ logging.config.fileConfig('logging.conf')
 # 创建 logger
 logger = logging.getLogger(__name__)
 
+def format_text(examples):
+    texts = [
+        f"### Instruction: {ins}\n### Input: {i}\n### Response: {o}"
+        for ins, i, o in zip(examples["instruction"], examples["input"], examples["output"])
+    ]
+    return tokenizer(texts, truncation=True, max_length=512, padding="max_length")
+
 def train():
     """
     fine tune a LLM with localized knowledge
@@ -65,8 +72,13 @@ def train():
     # 加载训练数据
     logger.info("load localized dataset")
     # dataset = load_dataset("csv", data_files="train_data.csv")
-    dataset = load_dataset("text", data_files="1.txt")
-    dataset = dataset.map(lambda x: tokenizer(x["text"], truncation=True, max_length=512), batched=True)
+    dataset = load_dataset("json", data_files="1.jsonl")
+    texts = [
+        f"### Instruction: {ins}\n### Input: {i}\n### Response: {o}"
+        for ins, i, o in zip(dataset["instruction"], dataset["input"], dataset["output"])
+    ]
+    dataset = tokenizer(texts, truncation=True, max_length=512, padding="max_length")
+    # dataset = dataset.map(lambda x: tokenizer(x["text"], truncation=True, max_length=512), batched=True)
 
     # 设置训练参数
     logger.info("set training args")
