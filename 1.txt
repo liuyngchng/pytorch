@@ -1,0 +1,3 @@
+Instruction:缴费
+Input: 昆仑燃气如何缴费
+Output：这种操作，你得先办理一个银行卡，然后绑定在klgs公众号里

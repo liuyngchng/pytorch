@@ -7,6 +7,7 @@ watch -n 1 nvidia-smi 观察 GPU 加载情况
 训练前执行 sudo nvidia-smi -pm 1启用持久模式
 使用nohup后台运行避免ssh中断影响
 添加try-except块捕捉CUDA错误并自动重试
+1.json format { "instruction": "your instruction", "input": "you input txt", "output": "something want tobe outputed" }
 """
 import os
 os.environ["CUDA_VISIBLE_DEVICES"]='GPU-99b29e6e-b59b-2d02-714f-16bc83525830'
@@ -26,12 +27,6 @@ logging.config.fileConfig('logging.conf')
 # 创建 logger
 logger = logging.getLogger(__name__)
 
-def format_text(examples):
-    texts = [
-        f"### Instruction: {ins}\n### Input: {i}\n### Response: {o}"
-        for ins, i, o in zip(examples["instruction"], examples["input"], examples["output"])
-    ]
-    return tokenizer(texts, truncation=True, max_length=512, padding="max_length")
 
 def train():
     """
@@ -71,14 +66,8 @@ def train():
 
     # 加载训练数据
     logger.info("load localized dataset")
-    # dataset = load_dataset("csv", data_files="train_data.csv")
-    dataset = load_dataset("json", data_files="1.jsonl")
-    texts = [
-        f"### Instruction: {ins}\n### Input: {i}\n### Response: {o}"
-        for ins, i, o in zip(dataset["instruction"], dataset["input"], dataset["output"])
-    ]
-    dataset = tokenizer(texts, truncation=True, max_length=512, padding="max_length")
-    # dataset = dataset.map(lambda x: tokenizer(x["text"], truncation=True, max_length=512), batched=True)
+    my_dataset = load_dataset("text", data_files="1.txt")
+    my_dataset1 = my_dataset.map(lambda x: tokenizer(x["text"], truncation=True, max_length=512), batched=True)
 
     # 设置训练参数
     logger.info("set training args")
@@ -98,7 +87,7 @@ def train():
     trainer = Trainer(
         model=model,
         args=training_args,
-        train_dataset=dataset["train"],
+        train_dataset=my_dataset1["train"],
         data_collator=data_collator,
     )
     logger.info("start train")
