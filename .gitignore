@@ -8,3 +8,4 @@ data/*
 **/*.hf
 **/*.hf/*
 txt_trainer
+nohup.out
