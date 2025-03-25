@@ -18,6 +18,7 @@ from peft import LoraConfig, get_peft_model, PeftModel
 import logging.config
 
 model_name = "../DeepSeek-R1-Distill-Qwen-1.5B"
+# model_name = "../DeepSeek-R1-Distill-Llama-8B"
 
 # 加载配置
 logging.config.fileConfig('logging.conf')
@@ -37,7 +38,7 @@ def train():
         model_name,
         torch_dtype=torch.float16,          # 降低精度，减少显存消耗量
         device_map="auto",                  # 自动分配设备
-        attn_implementation="flash_attention_2",
+        # attn_implementation="flash_attention_2",    # pip install flash_attn
         # device_map = {"":0},                # 强制使用单一设备
         quantization_config=BitsAndBytesConfig(
             load_in_4bit=True,
@@ -114,5 +115,5 @@ def test():
 
 
 if __name__ == "__main__":
-    # train()
+    train()
     test()
