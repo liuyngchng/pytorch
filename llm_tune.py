@@ -164,8 +164,13 @@ def test_model():
                          do_sample=True
                          )
     logger.info("trigger test")
-    result = generator("户内拆改迁移服务怎么做？", max_length=200)
-    logger.info(f"test result: {result[0]['generated_text']}")
+    prompt = """[instruction]回答燃气服务相关问题
+    [input]户内拆改迁移服务怎么做？
+    [output]"""
+    result = generator(prompt, max_length=300)
+    answer = result[0]['generated_text'].split("[output]")[-1].strip()
+    logger.info(f"test result: {answer}")
+
 
 
 if __name__ == "__main__":
