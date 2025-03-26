@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 （1）硬件
-        1）Geforce RXT 3090Ti，功率消耗350W（额定450W）, 显存占用 16GB(共24GB)
+        1）Geforce RXT 3090Ti，功率消耗400W（额定450W）, 显存占用 23GB(共24GB)
         2）Thinkpad T14 笔记本外接显卡, 1th Gen Intel® Core™ i7-1165G7 × 8， 16GB 内存，
 （2）运行
         1）通过 nvtop(sudo apt-get install nvtop) 或 nvidia-smi -L 获取指定 GPU 的 UUID
@@ -45,31 +45,31 @@ def check_gpu():
         dev = torch.cuda.get_device_properties(i)
         logger.info(f"GPU {i}: UUID[{dev.uuid}], name[{dev.name}], mem[{dev.total_memory / 1024 ** 3:.1f}GB]")
 
-def build_model(name:str):
+def get_model(name:str):
     """
     build a base model which would be trained
     :param name: model name/path in local
     :return: a base model
     """
-    # my_model = AutoModelForCausalLM.from_pretrained(
-    #     name,
-    #     torch_dtype=torch.bfloat16,  # 优先 float32 > bfloat16 > float16
-    #     # device_map="auto",
-    #     device_map={"": 0},
-    # )
-
-    # 降低精度，节约显存
     my_model = AutoModelForCausalLM.from_pretrained(
         name,
-        torch_dtype=torch.float16,          # 降低精度，减少显存消耗量
-        # device_map="auto",                  # 自动分配设备
-        # attn_implementation="flash_attention_2",    # pip install flash_attn
-        device_map = {"":0},                # 强制使用单一设备
-        quantization_config=BitsAndBytesConfig(
-            load_in_4bit=True,                # 启用4bit量化缓解显存压力（适合24GB显存）
-            bnb_4bit_compute_dtype=torch.float16
-        )
+        torch_dtype=torch.float16,  # 优先 float32 > bfloat16 > float16
+        # device_map="auto",
+        device_map={"": 0},
     )
+
+    # 降低精度，节约显存
+    # my_model = AutoModelForCausalLM.from_pretrained(
+    #     name,
+    #     torch_dtype=torch.float16,          # 降低精度，减少显存消耗量
+    #     # device_map="auto",                  # 自动分配设备
+    #     # attn_implementation="flash_attention_2",    # pip install flash_attn
+    #     device_map = {"":0},                # 强制使用单一设备
+    #     quantization_config=BitsAndBytesConfig(
+    #         load_in_4bit=True,                # 启用4bit量化缓解显存压力（适合24GB显存）
+    #         bnb_4bit_compute_dtype=torch.float16
+    #     )
+    # )
     return my_model
 
 def train():
@@ -80,7 +80,7 @@ def train():
     """
     # 加载本地模型和分词器
     logger.info("load local model and tokenizer")
-    model = build_model(model_name)
+    model = get_model(model_name)
     # PEFT 微调
     logger.info("parameter efficient fine-tuning")
     peft_config = LoraConfig(
@@ -110,7 +110,7 @@ def train():
     logger.info("set training args")
     training_args = TrainingArguments(
         output_dir="./txt_trainer",
-        num_train_epochs=10,            # 数字较大可能会导致过拟合
+        num_train_epochs=50,            # 数字较大可能会导致过拟合
         per_device_train_batch_size=4,  # 1, 2, 4 值越大，训练速度越快，同时可能提升模型稳定性，进而可能提高精度
         gradient_accumulation_steps=4,
         # gradient_checkpointing=True,
@@ -140,7 +140,7 @@ def train():
 
 def test():
     logger.info("load base model")
-    base_model = build_model(model_name)
+    base_model = get_model(model_name)
     logger.info("PEFT base model")
     peft_model = (PeftModel.from_pretrained(base_model, "./txt_trainer")
                   .merge_and_unload())  # 合并LoRA权重提升推理速度
@@ -156,7 +156,7 @@ def test():
                          do_sample=True
                          )
     logger.info("trigger test")
-    result = generator("昆仑燃气如何缴费", max_length=200)
+    result = generator("昆仑燃气需要服务的客户数量是多少？", max_length=200)
     logger.info(f"test result: {result[0]['generated_text']}")
 
 
