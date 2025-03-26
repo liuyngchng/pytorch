@@ -10,3 +10,4 @@ data/*
 txt_trainer
 nohup.out
 #*.jsonl
+logs
