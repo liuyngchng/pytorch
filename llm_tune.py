@@ -93,7 +93,7 @@ def train():
 
     # 加载训练数据
     logger.info("load localized dataset")
-    my_dataset = load_dataset("text", data_files="1.txt")["train"]
+    my_dataset = load_dataset("text", data_files="my.txt")["train"]
 
     # def tokenize_fn(x):
     #     return tokenizer(
@@ -110,7 +110,7 @@ def train():
     logger.info("set training args")
     training_args = TrainingArguments(
         output_dir="./txt_trainer",
-        num_train_epochs=10,
+        num_train_epochs=10,            # 数字较大可能会导致过拟合
         per_device_train_batch_size=4,  # 1, 2, 4 值越大，训练速度越快，同时可能提升模型稳定性，进而可能提高精度
         gradient_accumulation_steps=4,
         # gradient_checkpointing=True,
