@@ -16,7 +16,8 @@
         6）1.json format { "instruction": "your instruction", "input": "you input txt", "output": "something want tobe outputed" }
 """
 import os
-os.environ["CUDA_VISIBLE_DEVICES"]='GPU-99b29e6e-b59b-2d02-714f-16bc83525830'
+gpu_UUID = 'GPU-99b29e6e-b59b-2d02-714f-16bc83525830'
+os.environ["CUDA_VISIBLE_DEVICES"]=gpu_UUID
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer, pipeline, \
     DataCollatorForLanguageModeling, BitsAndBytesConfig
@@ -33,24 +34,33 @@ logging.config.fileConfig('logging.conf')
 logger = logging.getLogger(__name__)
 
 
-def train():
+def check_gpu():
     """
-    fine tune a LLM with localized knowledge
-    若需高效微调可集成peft库实现LoRA。数据准备质量对最终效果影响最大，建议确保训练文本包含明确的问答/指令结构
+    check gpu whether it is available
     :return:
     """
-    # 加载本地模型和分词器
-    logger.info("load local model and tokenizer")
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
+    if not torch.cuda.is_available():
+        raise "gpu not available err"
+    for i in range(torch.cuda.device_count()):
+        dev = torch.cuda.get_device_properties(i)
+        logger.info(f"GPU {i}: UUID[{dev.uuid}], name[{dev.name}], mem[{dev.total_memory / 1024 ** 3:.1f}GB]")
+
+def build_model(name:str):
+    """
+    build a base model which would be trained
+    :param name: model name/path in local
+    :return: a base model
+    """
+    my_model = AutoModelForCausalLM.from_pretrained(
+        name,
         torch_dtype=torch.bfloat16,  # 优先 float32 > bfloat16 > float16
         # device_map="auto",
         device_map={"": 0},
     )
 
     # 降低精度，节约显存
-    # model = AutoModelForCausalLM.from_pretrained(
-    #     model_name,
+    # my_model = AutoModelForCausalLM.from_pretrained(
+    #     name,
     #     torch_dtype=torch.float16,          # 降低精度，减少显存消耗量
     #     device_map="auto",                  # 自动分配设备
     #     # attn_implementation="flash_attention_2",    # pip install flash_attn
@@ -60,6 +70,17 @@ def train():
     #         bnb_4bit_compute_dtype=torch.float16
     #     )
     # )
+    return my_model
+
+def train():
+    """
+    fine tune a LLM with localized knowledge
+    若需高效微调可集成peft库实现LoRA。数据准备质量对最终效果影响最大，建议确保训练文本包含明确的问答/指令结构
+    :return:
+    """
+    # 加载本地模型和分词器
+    logger.info("load local model and tokenizer")
+    model = build_model(model_name)
     # PEFT 微调
     logger.info("parameter efficient fine-tuning")
     peft_config = LoraConfig(
@@ -124,10 +145,11 @@ def test():
                          top_p=0.9                              # 提高生成聚焦度
                          )
     logger.info("trigger test")
-    result = generator("昆仑燃气燃气缴费如何操作", max_length=200)
+    result = generator("昆仑燃气如何缴费", max_length=200)
     logger.info(f"test result: {result[0]['generated_text']}")
 
 
 if __name__ == "__main__":
+    check_gpu()
     train()
     test()
