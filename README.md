@@ -8,7 +8,7 @@ https://pytorch.org/tutorials/index.html
 
 # 3. 模型转换
 
-```$xslt
+```sh
 git clone https://github.com/ggerganov/llama.cpp
 cd llama.cpp
 python3 convert_hf_to_gguf.py \
@@ -38,10 +38,20 @@ CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=1 vllm serve deepseek-ai/DeepS
 # 6. train
 
 ```sh
+# 启用持久模式
+sudo nvidia-smi -pm 1 
+# 监控方法1
 watch -n 1 nvidia-smi
 
-pip install flash-attn --no-build-isolation
-sudo apt install nvidia-cuda-toolkit
+#pip install flash-attn --no-build-isolation
+#sudo apt install nvidia-cuda-toolkit
+
+# 监控方法2
+sudo apt-get install nvtop
+# 实时更新 GPU利用率，GPU memory 使用率
+nvtop
+# 开始运行
+./llm_tune.py
 ```
 
 训练显存储占用情况
@@ -56,12 +66,12 @@ Tue Mar 25 10:13:02 2025
 | Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
 |                                         |                        |               MIG M. |
 |=========================================+========================+======================|
-|   0  NVIDIA GeForce MX450           Off |   00000000:01:00.0 Off |                  N/A |
+|   0  NVIDIA GeForce MX450           On |   00000000:01:00.0 Off |                  N/A |
 | N/A   51C    P8             N/A /    9W |       1MiB /   2048MiB |      0%      Default |
 |                                         |                        |                  N/A |
 +-----------------------------------------+------------------------+----------------------+
-|   1  NVIDIA GeForce RTX 3090 Ti     Off |   00000000:52:00.0 Off |                  Off |
-| 53%   56C    P2            172W /  450W |    4161MiB /  24564MiB |     39%      Default |
+|   1  NVIDIA GeForce RTX 3090 Ti     On |   00000000:52:00.0 Off |                  Off |
+| 53%   56C    P2            410W /  450W |    23161MiB /  24564MiB |     39%      Default |
 |                                         |                        |                  N/A |
 +-----------------------------------------+------------------------+----------------------+
                                                                                          

@@ -56,9 +56,11 @@ def get_model(name:str):
     """
     my_model = AutoModelForCausalLM.from_pretrained(
         name,
-        torch_dtype=torch.float16,  # 优先 float32 > bfloat16 > float16
+        # torch_dtype=torch.float16,  # 优先 float32 > bfloat16 > float16
+        torch_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
         # device_map="auto",
         device_map={"": 0},
+        use_cache=False  # 显式关闭缓存
     )
 
     # 降低精度，节约显存
@@ -83,18 +85,18 @@ def get_trainer(model, tokenizer, train_dataset, model_output_dir: str):
         num_train_epochs=10,            # 数字较大可能会导致过拟合
         per_device_train_batch_size=4,  # 1, 2, 4 值越大，训练速度越快，同时可能提升模型稳定性，进而可能提高精度
         gradient_accumulation_steps=4,
-        # gradient_checkpointing=True,
+        gradient_checkpointing=True,            # 自动触发 use_cache=False
+
         learning_rate=2e-4,
         save_total_limit=2,
-        fp16=True,                  # 启用混合精度训练
-        logging_steps=50,            # 添加训练监控
-        report_to="tensorboard",    # 强化日志监控
+        fp16=False,                             # 关闭混合精度
+        bf16=torch.cuda.is_bf16_supported(),    # A100/3090等显卡启用
+        logging_steps=50,                       # 添加训练监控
+        report_to="tensorboard",                # 通过 tensorboard 查看整个训练过程的参数变化
         logging_dir=tensorboard_log_idr,
     )
     logger.info(f"set training args as {training_args}")
-    data_collator = DataCollatorForLanguageModeling(
-        tokenizer=tokenizer, mlm=False
-    )
+    data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
     # 开始训练
     trainer = Trainer(
         model=model,
@@ -118,9 +120,10 @@ def peft_train():
     peft_config = LoraConfig(
         r=8,
         lora_alpha=32,
-        target_modules=["q_proj", "v_proj"]
+        target_modules=["q_proj", "v_proj"],
+        modules_to_save=["embed_tokens", "lm_head"]
     )
-    model = get_peft_model(model, peft_config)  # 原模型需先加载量化
+    model = get_peft_model(model, peft_config, adapter_name="lora_adapter")  # 原模型需先加载量化
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     # 加载训练数据
@@ -174,7 +177,7 @@ def test_model():
 
 
 if __name__ == "__main__":
-    # check_gpu()
-    # peft_train()
-    # torch.cuda.empty_cache()
+    check_gpu()
+    peft_train()
+    torch.cuda.empty_cache()
     test_model()

@@ -39,11 +39,17 @@ def token_txt(model: str, data_files: str)-> Union[DatasetDict, Dataset, Iterabl
         return tokenizer(
             x["text"],
             truncation=True,
-            max_length=512,
-            return_overflowing_tokens=True  # 启用文本分块
+            max_length= 131072,                 # 需与模型config.json的 max_position_embeddings 一致
+            return_overflowing_tokens=False,  # 启用文本分块
         )
+        # 仅处理需要展平的字段
+        # return {
+        #     "input_ids": [ids for chunk in output["input_ids"] for ids in chunk],
+        #     "attention_mask": [mask for chunk in output["attention_mask"] for mask in chunk]
+        # }
 
-    my_dataset1 = my_dataset.map(tokenize_fn, batched=True)
+    my_dataset1 = my_dataset.map(tokenize_fn, batched=True, remove_columns=["text"])
+    my_dataset1 = my_dataset1.shuffle(seed=42)
     logger.debug(f"data structure: {my_dataset1}, data sample: {my_dataset1[0]}")
     # my_dataset = my_dataset.map(
     #     lambda x: tokenizer(x["text"], truncation=True, max_length=512, return_overflowing_tokens=True), batched=True)
