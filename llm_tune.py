@@ -32,7 +32,6 @@ model_name = "../DeepSeek-R1-Distill-Llama-8B"
 model_output_dir="./txt_trainer"
 tensorboard_log_idr = "./logs"
 local_dataset = "my.txt"
-_model_instance = None
 
 # 加载配置
 logging.config.fileConfig('logging.conf')
@@ -82,18 +81,17 @@ def get_model(name:str):
     :param name: model name/path in local
     :return: a base model
     """
-    global _model_instance
-    if _model_instance is None:
-        logger.info(f"loading model {name}")
-        _model_instance = AutoModelForCausalLM.from_pretrained(
-            name,
-            torch_dtype=torch.float16,  # 优先 float32 > bfloat16 > float16
-            # device_map="auto",
-            device_map={"": 0},
-        )
+    logger.info(f"loading model {name}")
+    _model_instance = AutoModelForCausalLM.from_pretrained(
+        name,
+        torch_dtype=torch.float16,  # 优先 float32 > bfloat16 > float16
+        # device_map="auto",
+        device_map={"": 0},
+    )
+
 
     # 降低精度，节约显存
-    # my_model = AutoModelForCausalLM.from_pretrained(
+    # _model_instance = AutoModelForCausalLM.from_pretrained(
     #     name,
     #     torch_dtype=torch.float16,          # 降低精度，减少显存消耗量
     #     # device_map="auto",                  # 自动分配设备
@@ -112,7 +110,7 @@ def get_trainer(model, tokenizer, train_dataset, output_dir: str):
 
     training_args = TrainingArguments(
         output_dir=output_dir,
-        num_train_epochs=50,            # 数字较大可能会导致过拟合
+        num_train_epochs=10,            # 数字较大可能会导致过拟合
         per_device_train_batch_size=4,  # 1, 2, 4 值越大，训练速度越快，同时可能提升模型稳定性，进而可能提高精度
         gradient_accumulation_steps=4,
         # gradient_checkpointing=True,
@@ -174,8 +172,6 @@ def peft_train():
     # trainer.train()
     logger.info(f"model.peft_config after trainer.train(): {model.peft_config}")
     model = model.merge_and_unload()
-    global _model_instance
-    _model_instance = model  # 更新全局实例
     logger.info(f"save merged model to {model_output_dir}")
     model.save_pretrained(model_output_dir, safe_serialization=True)  # 独立保存适配器
     logger.info(f"tokenizer.save_pretrained({model_output_dir})")
@@ -183,8 +179,6 @@ def peft_train():
 
 
 def test_model():
-    global _model_instance
-    _model_instance = None
     logger.info(f"start test_model, load base model {model_output_dir}")
     base_model = get_model(model_output_dir)
     logger.info(f"PEFT base model {model_output_dir}")
@@ -216,16 +210,27 @@ def test_model():
     [input]户内拆改迁移服务怎么做？
     [output]"""
     logger.info(f"trigger test {prompt}")
-    result = generator(prompt, max_length=300)
+    result = generator(prompt, max_length=1024)
     answer = result[0]['generated_text'].split("[output]")[-1].strip()
     logger.info(f"test result: {answer}")
 
-
-
-if __name__ == "__main__":
+def init_env():
     check_gpu()
     # 需管理员权限
     os.system("sudo nvidia-smi -pm 1")
     torch.cuda.empty_cache()
-    peft_train()
-    test_model()
+
+if __name__ == "__main__":
+    prompt = "instruction(使用方法说明)：\n\t1 - for LLM train task(启动模型训练)\n\t2 - for LLM  test task(启动模型测试)\n\tother(其他选项) - nothing done(程序退出)"
+    print(prompt)
+    task = input("请输入要执行的任务(1/2):")
+    if task == "1":
+        logger.info("启动模型训练")
+        init_env()
+        peft_train()
+    elif task == "2":
+        logger.info("启动模型测试")
+        init_env()
+        test_model()
+    else:
+        logger.error(f"nothing done, input '1' or '2', you must make a choice.")
