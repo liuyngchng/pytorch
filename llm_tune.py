@@ -110,7 +110,7 @@ def get_trainer(model, tokenizer, train_dataset, output_dir: str):
 
     training_args = TrainingArguments(
         output_dir=output_dir,
-        num_train_epochs=10,            # 数字较大可能会导致过拟合
+        num_train_epochs=100,            # 数字较大可能会导致过拟合
         per_device_train_batch_size=4,  # 1, 2, 4 值越大，训练速度越快，同时可能提升模型稳定性，进而可能提高精度
         gradient_accumulation_steps=4,
         # gradient_checkpointing=True,
@@ -151,7 +151,7 @@ def peft_train():
         target_modules=["q_proj", "v_proj"]
     )
     model = get_peft_model(model, peft_config)  # 原模型需先加载量化
-    logger.info(f"model.peft_config after peft_config: {model.peft_config}")
+    logger.debug(f"model.peft_config after peft_config: {model.peft_config}")
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     # 加载训练数据
@@ -170,7 +170,7 @@ def peft_train():
             trainer.args.per_device_train_batch_size = max(1, trainer.args.per_device_train_batch_size // 2)
             logger.error(f"error {e}, retry with trainer.args.per_device_train_batch_size ={trainer.args.per_device_train_batch_size} ")
     # trainer.train()
-    logger.info(f"model.peft_config after trainer.train(): {model.peft_config}")
+    logger.debug(f"model.peft_config after trainer.train(): {model.peft_config}")
     model = model.merge_and_unload()
     logger.info(f"save merged model to {model_output_dir}")
     model.save_pretrained(model_output_dir, safe_serialization=True)  # 独立保存适配器
