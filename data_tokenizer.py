@@ -31,6 +31,12 @@ def token_jsonl(model: str, data_files: str)-> Union[DatasetDict, Dataset, Itera
     logger.debug(f"data structure: {my_dataset1}, data sample: {my_dataset1[0]}")
     return my_dataset1
 
+
+def convert_to_json(file_path):
+    with open(file_path) as f:
+        return [{"instruction": "生成燃气服务回答", "input": line.strip(), "output": ""} for line in f]
+
+
 def token_txt(model: str, data_files: str)-> Union[DatasetDict, Dataset, IterableDatasetDict, IterableDataset]:
     logger.info("load localized dataset for txt")
     tokenizer = AutoTokenizer.from_pretrained(model)
@@ -54,3 +60,6 @@ if __name__ == "__main__":
     # dt = token_jsonl(model_name, "1.jsonl")
     dt =  token_txt(model_name, "my.txt")
     logger.info(f"data structure: {dt}, data sample: {dt[0]}")
+
+    dt = convert_to_json("my.txt")
+    logger.info(f"{dt}")

@@ -3,7 +3,7 @@
 """
 （1）硬件
         1）Geforce RXT 3090Ti，功率消耗400W（额定450W）, 显存占用 23GB(共24GB)
-        2）Thinkpad T14 笔记本外接显卡, 1th Gen Intel® Core™ i7-1165G7 × 8， 16GB 内存，
+        2）Thinkpad T14 笔记本通过Thunderbolt3(雷电3)接口外接显卡, CPU 为 1th Gen Intel® Core™ i7-1165G7 × 8， 内存 16GB
 （2）运行
         1）通过 nvtop(sudo apt-get install nvtop) 或 nvidia-smi -L 获取指定 GPU 的 UUID
 
@@ -16,6 +16,7 @@
         5）添加try-except块捕捉CUDA错误并自动重试
         6）1.json format { "instruction": "your instruction", "input": "you input txt", "output": "something want tobe outputed" }
 """
+import json
 import os
 from typing import Union
 
@@ -59,8 +60,26 @@ def check_gpu():
 
 def token_txt(model: str, data_files: str)-> Union[DatasetDict, Dataset, IterableDatasetDict, IterableDataset]:
     logger.info("load localized dataset for txt")
+
+    # my_dataset = load_dataset("text", data_files=data_files)["train"]
+
+    # JSON数据转换核心逻辑
+    def convert_to_json():
+        with open(data_files) as f:
+            return [{
+                "instruction": "燃气服务问答",
+                "input": line.strip(),
+                "output": ""  # 留空等待模型生成
+            } for line in f]
+
+    # 创建带格式的文本数据集
+    json_data = convert_to_json()
+    text_samples = [f"Instruction: {item['instruction']}\nInput: {item['input']}\nOutput: "
+                    for item in json_data]  # 结构化文本模板
+    my_dataset = Dataset.from_dict({"text": text_samples})
+
+
     tokenizer = AutoTokenizer.from_pretrained(model)
-    my_dataset = load_dataset("text", data_files=data_files)["train"]
     def tokenize_fn(x):
         return tokenizer(
             x["text"],
@@ -74,6 +93,8 @@ def token_txt(model: str, data_files: str)-> Union[DatasetDict, Dataset, Iterabl
     # my_dataset = my_dataset.map(
     #     lambda x: tokenizer(x["text"], truncation=True, max_length=512, return_overflowing_tokens=True), batched=True)
     return my_dataset1
+
+
 
 def get_model(name:str):
     """
@@ -110,7 +131,7 @@ def get_trainer(model, tokenizer, train_dataset, output_dir: str):
 
     training_args = TrainingArguments(
         output_dir=output_dir,
-        num_train_epochs=100,            # 数字较大可能会导致过拟合
+        num_train_epochs=5,            # 数字较大可能会导致过拟合
         per_device_train_batch_size=4,  # 1, 2, 4 值越大，训练速度越快，同时可能提升模型稳定性，进而可能提高精度
         gradient_accumulation_steps=4,
         # gradient_checkpointing=True,
@@ -206,8 +227,8 @@ def test_model():
                          do_sample=True
                          )
 
-    prompt = """[instruction]回答燃气服务相关问题
-    [input]户内拆改迁移服务怎么做？
+    prompt = """[instruction]燃气服务问答
+    [input]昆仑燃气服务的退款服务时效要求是什么？
     [output]"""
     logger.info(f"trigger test {prompt}")
     result = generator(prompt, max_length=1024)
