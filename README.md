@@ -28,8 +28,10 @@ git clone https://www.modelscope.cn/deepseek-ai/DeepSeek-R1-Distill-Llama-8B.git
 硬件环境 一张 RTX 3090Ti ，显存 24GB
 --tensor-parallel-size ，如果有多张显卡，可以设置大于1
 ```shell
+# pip install vllm
 # 通过 CUDA_VISIBLE_DEVICES 指定 GPU
 CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=1 vllm serve deepseek-ai/DeepSeek-R1-Distill-Llama-8B --tensor-parallel-size 1 --max-model-len 8096 --gpu-memory-utilization 0.8 --enforce-eager
+
 
 # --gpu-memory-utilization 0.4 out of memory
 CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=1 vllm serve deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B --tensor-parallel-size 1 --max-model-len 32768 --gpu-memory-utilization 0.5 --enforce-eager
@@ -82,3 +84,28 @@ tensorboard --logdir=./logs
 
 browser http://localhost:6006/
 ```
+
+启动训练完的模型
+
+
+
+```sh
+CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=1 vllm serve txt_trainer --tensor-parallel-size 1 --max-model-len 8096 --gpu-memory-utilization 0.9 --enforce-eager
+```
+
+测试
+
+
+
+```sh
+# get model list
+curl http://localhost:8000/v1/models |jq
+
+# start chat 
+curl -X POST -s -H 'Content-Type:application/json' 'http://127.0.0.1:8000/v1/chat/completions' -d '{
+        "model": "txt_trainer",
+        "messages": [{"role": "user", "content": "户内拆改迁移服务怎么做"}],
+        "stream":false
+}' | jq
+```
+
