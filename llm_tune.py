@@ -29,6 +29,7 @@ import data_tokenizer
 model_name = "../DeepSeek-R1-Distill-Llama-8B"
 model_output_dir="./txt_trainer"
 tensorboard_log_idr = "./logs"
+local_dataset = "my.txt"
 
 # 加载配置
 logging.config.fileConfig('logging.conf')
@@ -91,7 +92,7 @@ def get_trainer(model, tokenizer, train_dataset, model_output_dir: str):
         report_to="tensorboard",    # 强化日志监控
         logging_dir=tensorboard_log_idr,
     )
-    logger.info(f"set training args as {training_args}")
+    logger.debug(f"set training args as {training_args}")
     data_collator = DataCollatorForLanguageModeling(
         tokenizer=tokenizer, mlm=False
     )
@@ -111,7 +112,7 @@ def peft_train():
     :return:
     """
     # 加载本地模型和分词器
-    logger.info("load local model and tokenizer")
+    logger.info(f"load local model and tokenizer from {model_name}")
     model = get_model(model_name)
     # PEFT 微调
     logger.info("parameter efficient fine-tuning")
@@ -124,9 +125,8 @@ def peft_train():
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     # 加载训练数据
-    logger.info("load localized dataset")
-
-    my_dataset = data_tokenizer.token_txt(model_name, "my.txt")
+    logger.info(f"load local dataset from {local_dataset}")
+    my_dataset = data_tokenizer.token_txt(model_name, local_dataset)
     # logger.info(f"data structure:{my_dataset}, sample data: {my_dataset[0]}")
     logger.info("start training")
     trainer = get_trainer(model, tokenizer, my_dataset, model_output_dir)
@@ -137,14 +137,14 @@ def peft_train():
 
 
 def test_model():
-    logger.info("load base model")
+    logger.info(f"load base model {model_name}")
     base_model = get_model(model_name)
-    logger.info("PEFT base model")
-    peft_model = (PeftModel.from_pretrained(base_model, "./txt_trainer")
+    logger.info(f"PEFT base model {model_output_dir}")
+    peft_model = (PeftModel.from_pretrained(base_model, model_output_dir)
                   .merge_and_unload())  # 合并LoRA权重提升推理速度
     assert "lora" not in str(peft_model.state_dict().keys()), "LoRA权重未合并"
-    logger.info("load tokenizer")
-    tokenizer = AutoTokenizer.from_pretrained('./txt_trainer')  # 加载微调后的分词器
+    logger.info(f"load tokenizer {model_output_dir}")
+    tokenizer = AutoTokenizer.from_pretrained(model_output_dir)  # 加载微调后的分词器
     logger.info("build test pipeline")
     """
     text-generation 文本生成
@@ -163,10 +163,11 @@ def test_model():
                          repetition_penalty=1.2,                # 添加重复惩罚提升生成质量
                          do_sample=True
                          )
-    logger.info("trigger test")
+
     prompt = """[instruction]回答燃气服务相关问题
     [input]户内拆改迁移服务怎么做？
     [output]"""
+    logger.info(f"trigger test {prompt}")
     result = generator(prompt, max_length=300)
     answer = result[0]['generated_text'].split("[output]")[-1].strip()
     logger.info(f"test result: {answer}")
@@ -174,7 +175,7 @@ def test_model():
 
 
 if __name__ == "__main__":
-    # check_gpu()
-    # peft_train()
-    # torch.cuda.empty_cache()
-    test_model()
+    check_gpu()
+    peft_train()
+    torch.cuda.empty_cache()
+    # test_model()
