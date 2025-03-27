@@ -17,15 +17,16 @@
         6）1.json format { "instruction": "your instruction", "input": "you input txt", "output": "something want tobe outputed" }
 """
 import os
+from typing import Union
+
 gpu_UUID = 'GPU-99b29e6e-b59b-2d02-714f-16bc83525830'
 os.environ["CUDA_VISIBLE_DEVICES"]=gpu_UUID
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer, pipeline, \
     DataCollatorForLanguageModeling, BitsAndBytesConfig
-from datasets import load_dataset
+from datasets import load_dataset, DatasetDict, Dataset, IterableDatasetDict, IterableDataset
 from peft import LoraConfig, get_peft_model, PeftModel
 import logging.config
-import data_tokenizer
 
 model_name = "../DeepSeek-R1-Distill-Llama-8B"
 model_output_dir="./txt_trainer"
@@ -55,6 +56,25 @@ def check_gpu():
             f"当前显存占用: {torch.cuda.memory_allocated() / 1024 ** 3:.1f}GB "
             f"/ {torch.cuda.get_device_properties(i).total_memory / 1024 ** 3:.1f}GB"
         )
+
+
+def token_txt(model: str, data_files: str)-> Union[DatasetDict, Dataset, IterableDatasetDict, IterableDataset]:
+    logger.info("load localized dataset for txt")
+    tokenizer = AutoTokenizer.from_pretrained(model)
+    my_dataset = load_dataset("text", data_files=data_files)["train"]
+    def tokenize_fn(x):
+        return tokenizer(
+            x["text"],
+            truncation=True,
+            max_length=512,
+            return_overflowing_tokens=True  # 启用文本分块
+        )
+
+    my_dataset1 = my_dataset.map(tokenize_fn, batched=True)
+    logger.debug(f"data structure: {my_dataset1}, data sample: {my_dataset1[0]}")
+    # my_dataset = my_dataset.map(
+    #     lambda x: tokenizer(x["text"], truncation=True, max_length=512, return_overflowing_tokens=True), batched=True)
+    return my_dataset1
 
 def get_model(name:str):
     """
@@ -138,7 +158,7 @@ def peft_train():
 
     # 加载训练数据
     logger.info(f"load local dataset from {local_dataset}")
-    my_dataset = data_tokenizer.token_txt(model_name, local_dataset)
+    my_dataset = token_txt(model_name, local_dataset)
     # logger.info(f"data structure:{my_dataset}, sample data: {my_dataset[0]}")
     logger.info("start training")
     trainer = get_trainer(model, tokenizer, my_dataset, model_output_dir)
