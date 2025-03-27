@@ -8,6 +8,7 @@
         1）通过 nvtop(sudo apt-get install nvtop) 或 nvidia-smi -L 获取指定 GPU 的 UUID
 
         2）watch -n 1 nvidia-smi 观察 GPU 加载情况，实施检测功率、显存占用情况
+            watch -n 1 "nvidia-smi -i GPU-99b29e6e-b59b-2d02-714f-16bc83525830 --query-gpu=utilization.gpu,memory.used --format=csv"
 
         3）训练前执行 sudo nvidia-smi -pm 1 启用持久模式
 
@@ -30,6 +31,7 @@ model_name = "../DeepSeek-R1-Distill-Llama-8B"
 model_output_dir="./txt_trainer"
 tensorboard_log_idr = "./logs"
 local_dataset = "my.txt"
+_model_instance = None
 
 # 加载配置
 logging.config.fileConfig('logging.conf')
@@ -47,7 +49,12 @@ def check_gpu():
         raise "gpu not available err"
     for i in range(torch.cuda.device_count()):
         dev = torch.cuda.get_device_properties(i)
-        logger.info(f"GPU {i}: UUID[{dev.uuid}], name[{dev.name}], mem[{dev.total_memory / 1024 ** 3:.1f}GB]")
+        logger.info(f"GPU {i}: UUID[{dev.uuid}], name[{dev.name}], "
+                    f"mem[{dev.total_memory / 1024 ** 3:.1f}GB]")
+        logger.info(
+            f"当前显存占用: {torch.cuda.memory_allocated() / 1024 ** 3:.1f}GB "
+            f"/ {torch.cuda.get_device_properties(i).total_memory / 1024 ** 3:.1f}GB"
+        )
 
 def get_model(name:str):
     """
@@ -55,12 +62,14 @@ def get_model(name:str):
     :param name: model name/path in local
     :return: a base model
     """
-    my_model = AutoModelForCausalLM.from_pretrained(
-        name,
-        torch_dtype=torch.float16,  # 优先 float32 > bfloat16 > float16
-        # device_map="auto",
-        device_map={"": 0},
-    )
+    global _model_instance
+    if _model_instance is None:
+        _model_instance = AutoModelForCausalLM.from_pretrained(
+            name,
+            torch_dtype=torch.float16,  # 优先 float32 > bfloat16 > float16
+            # device_map="auto",
+            device_map={"": 0},
+        )
 
     # 降低精度，节约显存
     # my_model = AutoModelForCausalLM.from_pretrained(
@@ -74,13 +83,14 @@ def get_model(name:str):
     #         bnb_4bit_compute_dtype=torch.float16
     #     )
     # )
-    return my_model
+    logger.info(f"_model_instance.dtype: {_model_instance.dtype}")
+    return _model_instance
 
-def get_trainer(model, tokenizer, train_dataset, model_output_dir: str):
+def get_trainer(model, tokenizer, train_dataset, output_dir: str):
     # 设置训练参数
 
     training_args = TrainingArguments(
-        output_dir=model_output_dir,
+        output_dir=output_dir,
         num_train_epochs=10,            # 数字较大可能会导致过拟合
         per_device_train_batch_size=4,  # 1, 2, 4 值越大，训练速度越快，同时可能提升模型稳定性，进而可能提高精度
         gradient_accumulation_steps=4,
@@ -130,7 +140,16 @@ def peft_train():
     # logger.info(f"data structure:{my_dataset}, sample data: {my_dataset[0]}")
     logger.info("start training")
     trainer = get_trainer(model, tokenizer, my_dataset, model_output_dir)
-    trainer.train()
+    for attempt in range(3):
+        try:
+            trainer.train()
+            break
+        except torch.cuda.OutOfMemoryError as e:
+            torch.cuda.empty_cache()
+            # 动态调整batch_size
+            trainer.args.per_device_train_batch_size = max(1, trainer.args.per_device_train_batch_size // 2)
+            logger.error(f"error {e}, retry with trainer.args.per_device_train_batch_size ={trainer.args.per_device_train_batch_size} ")
+    # trainer.train()
     logger.info(f"save model to dir: {model_output_dir}")
     trainer.save_model()
     tokenizer.save_pretrained(model_output_dir)  # 确保测试时加载一致的分词器
@@ -176,6 +195,8 @@ def test_model():
 
 if __name__ == "__main__":
     check_gpu()
-    peft_train()
+    # 需管理员权限
+    os.system("sudo nvidia-smi -pm 1")
     torch.cuda.empty_cache()
-    # test_model()
+    peft_train()
+    test_model()
