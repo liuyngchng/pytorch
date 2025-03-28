@@ -94,7 +94,19 @@ def token_txt(model: str, data_files: str)-> Union[DatasetDict, Dataset, Iterabl
     #     lambda x: tokenizer(x["text"], truncation=True, max_length=512, return_overflowing_tokens=True), batched=True)
     return my_dataset1
 
+def token_json(model: str, data_files: str)-> Union[DatasetDict, Dataset, IterableDatasetDict, IterableDataset]:
+    logger.info("load localized dataset for json")
+    tokenizer = AutoTokenizer.from_pretrained(model)
+    def tokenize_func(example):
+        text = f"问：{example['question']}\n答：{example['answer']}"
+        return tokenizer(text,
+                         max_length=512,
+                         padding="max_length",
+                         truncation=True)
 
+    dataset = load_dataset("json", data_files=data_files)
+    dataset = dataset.map(tokenize_func, batched=True)
+    return dataset
 
 def get_model(name:str):
     """
