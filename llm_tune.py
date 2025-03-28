@@ -3,8 +3,17 @@
 """
 （1）硬件
         1）Geforce RXT 3090Ti，功率消耗400W（额定450W）, 显存占用 23GB(共24GB)
-        2）Thinkpad T14 笔记本通过Thunderbolt3(雷电3)接口外接显卡, CPU 为 1th Gen Intel® Core™ i7-1165G7 × 8， 内存 16GB
-（2）运行
+        2）ThinkPad_T14_Gen_2_Intel(https://psref.lenovo.com/WDProduct/ThinkPad/ThinkPad_T14_Gen_2_Intel)
+            通过Thunderbolt4(雷电4)接口外接显卡, CPU 为 11th Gen Intel® Core™ i7-1165G7 × 8， 内存 16GB
+ (2) python env
+    pip install torch peft datasets transformers tensorboardX
+    # 离线环境下可通过以下方式安装，严格保证离线和有限环境下的python，pip版本完全相同
+        cd my_whl_dir
+        # 有线环境下载 whl包
+        pip download torch peft datasets transformers
+        # 离线环境安装
+        pip install torch peft datasets transformers tensorboardX --no-index --find-links=/a/b/c/my_whl_dir
+（3）运行
         1）通过 nvtop(sudo apt-get install nvtop) 或 nvidia-smi -L 获取指定 GPU 的 UUID
 
         2）watch -n 1 nvidia-smi 观察 GPU 加载情况，实施检测功率、显存占用情况
@@ -20,6 +29,7 @@ import json
 import os
 from typing import Union
 
+# 对于多GPU 环境，此处需要修改成自己的 gpu_UUID，或者 GPU index
 gpu_UUID = 'GPU-99b29e6e-b59b-2d02-714f-16bc83525830'
 os.environ["CUDA_VISIBLE_DEVICES"]=gpu_UUID
 import torch
@@ -29,9 +39,13 @@ from datasets import load_dataset, DatasetDict, Dataset, IterableDatasetDict, It
 from peft import LoraConfig, get_peft_model, PeftModel
 import logging.config
 
+# 训练输入的大模型
 model_name = "../DeepSeek-R1-Distill-Llama-8B"
+# 训练输出的大模型
 model_output_dir="./txt_trainer"
+# 通过 tensorboard 查看训练过程的日至目录
 tensorboard_log_idr = "./logs"
+# 训练输入的语料库素材
 local_dataset = "my.txt"
 
 # 加载配置
@@ -250,7 +264,9 @@ def test_model():
 def init_env():
     check_gpu()
     # 需管理员权限
-    os.system("sudo nvidia-smi -pm 1")
+    shell_cmd = "sudo nvidia-smi -pm 1"
+    logger.info(f"start execute {shell_cmd}")
+    os.system(shell_cmd)
     torch.cuda.empty_cache()
 
 if __name__ == "__main__":
