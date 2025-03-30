@@ -26,7 +26,7 @@ def token_jsonl(model: str, data_files: str)-> Union[DatasetDict, Dataset, Itera
             text,
             truncation=True,
             max_length=512,
-            padding="max_length",  # 统一填充到max_length
+            padding="max_length",  # 统一填充到max_length，这种处理方法能够保证数据统一，但可能会导致浪费存储，padding为统一的长度;更好的做法是在使用数据training的时候进行动态填充
             return_tensors="pt"  # 返回PyTorch张量（根据框架可选）
         )
     # 处理数据集（默认batched=False，逐条处理）
@@ -59,15 +59,33 @@ def token_txt(model: str, data_files: str)-> Union[DatasetDict, Dataset, Iterabl
     return my_dataset1
 
 def token_json(model: str, data_files: str)-> Union[DatasetDict, Dataset, IterableDatasetDict, IterableDataset]:
+    """
+    在训练的时候，需要对数据进行动态填充
+    from transformers import DataCollatorForLanguageModeling
+
+    data_collator = DataCollatorForLanguageModeling(
+        tokenizer=tokenizer,
+        mlm=False,
+        pad_to_multiple_of=8  # 自动填充到8的倍数，提升GPU计算效率
+    )
+
+    # 在Trainer中启用
+    trainer = Trainer(
+        ...
+        data_collator=data_collator,
+    )
+    """
     logger.info("load localized dataset for json")
     tokenizer = AutoTokenizer.from_pretrained(model)
-    my_dataset = load_dataset("json", data_files=data_files)
+    my_dataset = load_dataset("json", data_files=data_files)["train"]
+    logger.info(f"data structure: {my_dataset}, data sample: {my_dataset[0]}")
     def tokenize_func(example):
-        text = f"问：{example['q']}\n答：{example['a']}"
-        return tokenizer(text,
-             max_length=512,
-             padding=True,
-             truncation=True
+        text = [f"问：{q}\n答：{a}" for q, a in zip(example['q'], example['a'])]
+        return tokenizer(
+            text,
+            truncation=True,
+            max_length=512,
+            return_overflowing_tokens=True
         )
 
     my_dataset = my_dataset.map(tokenize_func, batched=True)
