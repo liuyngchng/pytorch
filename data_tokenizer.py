@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 from typing import Union
 
 from datasets import load_dataset, DatasetDict, Dataset, IterableDatasetDict, IterableDataset
@@ -72,7 +75,7 @@ def token_json(model: str, data_files: str)-> Union[DatasetDict, Dataset, Iterab
 
 if __name__ == "__main__":
     # model_name = "../DeepSeek-R1-Distill-Qwen-1.5B"
-    model_name = "../DeepSeek-R1-Distill-Llama-8B"
+    # model_name = "../DeepSeek-R1-Distill-Llama-8B"
     # dt = token_jsonl(model_name, "1.jsonl")
     dt =  token_json(model_name, "my.json")
     logger.info(f"data structure: {dt}, data sample: {dt[0]}")
