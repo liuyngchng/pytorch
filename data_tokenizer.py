@@ -63,10 +63,10 @@ def token_json(model: str, data_files: str)-> Union[DatasetDict, Dataset, Iterab
     tokenizer = AutoTokenizer.from_pretrained(model)
     my_dataset = load_dataset("json", data_files=data_files)
     def tokenize_func(example):
-        text = f"问：{example['question']}\n答：{example['answer']}"
+        text = f"问：{example['q']}\n答：{example['a']}"
         return tokenizer(text,
              max_length=512,
-             padding="max_length",
+             padding=True,
              truncation=True
         )
 
@@ -74,21 +74,12 @@ def token_json(model: str, data_files: str)-> Union[DatasetDict, Dataset, Iterab
     return my_dataset
 
 if __name__ == "__main__":
-    # model_name = "../DeepSeek-R1-Distill-Qwen-1.5B"
+    model_name = "../DeepSeek-R1-Distill-Qwen-1.5B"
     # model_name = "../DeepSeek-R1-Distill-Llama-8B"
     # dt = token_jsonl(model_name, "1.jsonl")
-    # dt =  token_json(model_name, "my.json")
-    # logger.info(f"data structure: {dt}, data sample: {dt[0]}")
+    dt =  token_json(model_name, "my.json")
+    logger.info(f"data structure: {dt}, data sample: {dt[0]}")
     #
     # dt = convert_to_json("my.txt")
     # logger.info(f"{dt}")
 
-    my_dataset = load_dataset("json", data_files="my.json")
-
-
-    def tokenize_func(example):
-        text = f"问：{example['q']}\n答：{example['a']}"
-        return text
-
-
-    my_dataset = my_dataset.map(tokenize_func, batched=True)
