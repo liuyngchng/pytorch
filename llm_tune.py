@@ -7,7 +7,7 @@
             通过Thunderbolt4(雷电4)接口外接显卡, CPU 为 11th Gen Intel® Core™ i7-1165G7 × 8， 内存 16GB
  (2) python env
     pip install torch peft datasets transformers tensorboardX
-    # 离线环境下可通过以下方式安装，严格保证离线和有限环境下的python，pip版本完全相同
+    # 离线环境下可通过以下方式安装，严格保证离线和在线环境下的python，pip版本完全相同
         cd my_whl_dir
         # 有线环境下载 whl包
         pip download torch peft datasets transformers
