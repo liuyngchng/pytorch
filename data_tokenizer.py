@@ -42,8 +42,26 @@ def convert_to_json(file_path):
 
 def token_txt(model: str, data_files: str)-> Union[DatasetDict, Dataset, IterableDatasetDict, IterableDataset]:
     logger.info("load localized dataset for txt")
+
+    # my_dataset = load_dataset("text", data_files=data_files)["train"]
+
+    # JSON数据转换核心逻辑
+    def convert_to_json():
+        with open(data_files) as f:
+            return [{
+                "instruction": "燃气服务问答",
+                "input": line.strip(),
+                "output": ""  # 留空等待模型生成
+            } for line in f]
+
+    # 创建带格式的文本数据集
+    json_data = convert_to_json()
+    text_samples = [f"Instruction: {item['instruction']}\nInput: {item['input']}\nOutput: "
+                    for item in json_data]  # 结构化文本模板
+    my_dataset = Dataset.from_dict({"text": text_samples})
+
+
     tokenizer = AutoTokenizer.from_pretrained(model)
-    my_dataset = load_dataset("text", data_files=data_files)["train"]
     def tokenize_fn(x):
         return tokenizer(
             x["text"],

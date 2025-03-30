@@ -23,7 +23,6 @@
 
         4）使用nohup后台运行避免ssh中断影响
         5）添加try-except块捕捉CUDA错误并自动重试
-        6）1.json format { "instruction": "your instruction", "input": "you input txt", "output": "something want tobe outputed" }
 """
 import json
 import os
@@ -46,7 +45,8 @@ model_output_dir="./txt_trainer"
 # 通过 tensorboard 查看训练过程的日至目录
 tensorboard_log_idr = "./logs"
 # 训练输入的语料库素材
-local_dataset = "my.txt"
+# local_dataset = "my.txt"
+local_dataset = "my.json"
 
 # 加载配置
 logging.config.fileConfig('logging.conf')
@@ -72,55 +72,28 @@ def check_gpu():
         )
 
 
-def token_txt(model: str, data_files: str)-> Union[DatasetDict, Dataset, IterableDatasetDict, IterableDataset]:
-    logger.info("load localized dataset for txt")
 
-    # my_dataset = load_dataset("text", data_files=data_files)["train"]
-
-    # JSON数据转换核心逻辑
-    def convert_to_json():
-        with open(data_files) as f:
-            return [{
-                "instruction": "燃气服务问答",
-                "input": line.strip(),
-                "output": ""  # 留空等待模型生成
-            } for line in f]
-
-    # 创建带格式的文本数据集
-    json_data = convert_to_json()
-    text_samples = [f"Instruction: {item['instruction']}\nInput: {item['input']}\nOutput: "
-                    for item in json_data]  # 结构化文本模板
-    my_dataset = Dataset.from_dict({"text": text_samples})
-
-
-    tokenizer = AutoTokenizer.from_pretrained(model)
-    def tokenize_fn(x):
-        return tokenizer(
-            x["text"],
-            truncation=True,
-            max_length=512,
-            return_overflowing_tokens=True  # 启用文本分块
-        )
-
-    my_dataset1 = my_dataset.map(tokenize_fn, batched=True)
-    logger.debug(f"data structure: {my_dataset1}, data sample: {my_dataset1[0]}")
-    # my_dataset = my_dataset.map(
-    #     lambda x: tokenizer(x["text"], truncation=True, max_length=512, return_overflowing_tokens=True), batched=True)
-    return my_dataset1
 
 def token_json(model: str, data_files: str)-> Union[DatasetDict, Dataset, IterableDatasetDict, IterableDataset]:
+    """
+    data_files：内容格式如下 [{"q": "xxx?", "a": "xxx"}, {"q": "xxx?", "a": "xxx"}]
+    """
     logger.info("load localized dataset for json")
     tokenizer = AutoTokenizer.from_pretrained(model)
+    my_dataset = load_dataset("json", data_files=data_files)["train"]
+    logger.info(f"data structure: {my_dataset}, data sample: {my_dataset[0]}")
     def tokenize_func(example):
-        text = f"问：{example['question']}\n答：{example['answer']}"
-        return tokenizer(text,
-                         max_length=512,
-                         padding="max_length",
-                         truncation=True)
+        text = [f"问：{q}\n答：{a}" for q, a in zip(example['q'], example['a'])]
+        return tokenizer(
+            text,
+            truncation=True,
+            max_length=512,
+            return_overflowing_tokens=True
+        )
 
-    dataset = load_dataset("json", data_files=data_files)
-    dataset = dataset.map(tokenize_func, batched=True)
-    return dataset
+    my_dataset = my_dataset.map(tokenize_func, batched=True)
+    logger.info(f"data structure: {my_dataset}, data sample: {my_dataset[0]}")
+    return my_dataset
 
 def get_model(name:str):
     """
@@ -170,7 +143,9 @@ def get_trainer(model, tokenizer, train_dataset, output_dir: str):
     )
     logger.debug(f"set training args as {training_args}")
     data_collator = DataCollatorForLanguageModeling(
-        tokenizer=tokenizer, mlm=False
+        tokenizer=tokenizer,
+        mlm=False,
+        pad_to_multiple_of=8  # 自动填充到8的倍数，提升GPU计算效率
     )
     # 开始训练
     trainer = Trainer(
@@ -203,7 +178,7 @@ def peft_train():
 
     # 加载训练数据
     logger.info(f"load local dataset from {local_dataset}")
-    my_dataset = token_txt(model_name, local_dataset)
+    my_dataset = token_json(model_name, local_dataset)
     # logger.info(f"data structure:{my_dataset}, sample data: {my_dataset[0]}")
     logger.info("start training")
     trainer = get_trainer(model, tokenizer, my_dataset, model_output_dir)
@@ -220,18 +195,31 @@ def peft_train():
     logger.debug(f"model.peft_config after trainer.train(): {model.peft_config}")
     model = model.merge_and_unload()
     logger.info(f"save merged model to {model_output_dir}")
-    model.save_pretrained(model_output_dir, safe_serialization=True)  # 独立保存适配器
+    model.save_pretrained(
+        model_output_dir,
+        safe_serialization=True,
+        save_adapter=True,          # 显式保存adapter
+        is_main_process=True        # 保存config
+
+    )
     logger.info(f"tokenizer.save_pretrained({model_output_dir})")
     tokenizer.save_pretrained(model_output_dir)  # 确保测试时加载一致的分词器
+    # need to run 'sudo apt-get install tree' first
+    check_cmd = f"tree {model_output_dir}"
+    logger.info(f"run cmd {check_cmd}")
+    os.system(check_cmd)
 
 
 def test_model():
-    logger.info(f"start test_model, load base model {model_output_dir}")
-    base_model = get_model(model_output_dir)
-    logger.info(f"PEFT base model {model_output_dir}")
-    peft_model = PeftModel.from_pretrained(base_model, model_output_dir)
-    peft_model = peft_model.merge_and_unload()  # 合并LoRA权重提升推理速度
-    assert "lora" not in str(peft_model.state_dict().keys()), "LoRA权重未合并"
+    # logger.info(f"start test_model, load base model {model_output_dir}")
+    # base_model = get_model(model_output_dir)
+    # logger.info(f"PEFT base model {model_output_dir}")
+    # peft_model = PeftModel.from_pretrained(base_model, model_output_dir)
+    # peft_model = peft_model.merge_and_unload()  # 合并LoRA权重提升推理速度
+    # assert "lora" not in str(peft_model.state_dict().keys()), "LoRA权重未合并"
+
+    logger.info(f"load peft model {model_output_dir}")
+    peft_model = get_model(model_output_dir)
     logger.info(f"load tokenizer {model_output_dir}")
     tokenizer = AutoTokenizer.from_pretrained(model_output_dir)  # 加载微调后的分词器
     logger.info("build test pipeline")
@@ -253,9 +241,7 @@ def test_model():
                          do_sample=True
                          )
 
-    prompt = """[instruction]燃气服务问答
-    [input]昆仑燃气服务的退款服务时效要求是什么？
-    [output]"""
+    prompt = "问：如何成为昆昆燃气的服务客户？\n答："  # 匹配训练时的"问-答"模板
     logger.info(f"trigger test {prompt}")
     result = generator(prompt, max_length=1024)
     answer = result[0]['generated_text'].split("[output]")[-1].strip()
