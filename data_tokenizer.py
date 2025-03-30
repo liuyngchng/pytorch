@@ -74,6 +74,7 @@ def token_json(model: str, data_files: str)-> Union[DatasetDict, Dataset, Iterab
         ...
         data_collator=data_collator,
     )
+    这样做的优势，每个batch自动填充到该batch内最长序列长度，兼顾内存效率和训练效果
     """
     logger.info("load localized dataset for json")
     tokenizer = AutoTokenizer.from_pretrained(model)
