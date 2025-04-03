@@ -193,8 +193,11 @@ def peft_train():
     # PEFT 微调
     logger.info("parameter efficient fine-tuning")
     peft_config = LoraConfig(
-        r=8,
-        lora_alpha=32,
+        r=8,        # 表示低秩矩阵的秩（rank），控制适配层的表达能力。数值越大适配能力越强，但计算量也越大（典型值范围8-64）
+        lora_alpha=32,# 缩放系数，控制低秩矩阵对原始参数的干预强度。与r共同决定最终权重调整幅度（计算公式：ΔW = α/r * (A·B)）
+        # q_proj：查询（Query）投影矩阵
+        # v_proj：值（Value）投影矩阵
+        # 表示仅修改Transformer中这两个核心注意力层的参数
         target_modules=["q_proj", "v_proj"]
     )
     model = get_peft_model(model, peft_config)  # 原模型需先加载量化
