@@ -1,28 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-（1）硬件
-        1）Geforce RXT 3090Ti，功率消耗400W（额定450W）, 显存占用 23GB(共24GB)
-        2）ThinkPad_T14_Gen_2_Intel(https://psref.lenovo.com/WDProduct/ThinkPad/ThinkPad_T14_Gen_2_Intel)
-            通过Thunderbolt4(雷电4)接口外接显卡, CPU 为 11th Gen Intel® Core™ i7-1165G7 × 8， 内存 16GB
- (2) python env
-    pip install torch peft datasets transformers tensorboardX
-    # 离线环境下可通过以下方式安装，严格保证离线和在线环境下的python，pip版本完全相同
-        cd my_whl_dir
-        # 有线环境下载 whl包
-        pip download torch peft datasets transformers
-        # 离线环境安装
-        pip install torch peft datasets transformers tensorboardX --no-index --find-links=/a/b/c/my_whl_dir
-（3）运行
-        1）通过 nvtop(sudo apt-get install nvtop) 或 nvidia-smi -L 获取指定 GPU 的 UUID
-
-        2）watch -n 1 nvidia-smi 观察 GPU 加载情况，实施检测功率、显存占用情况
-            watch -n 1 "nvidia-smi -i GPU-99b29e6e-b59b-2d02-714f-16bc83525830 --query-gpu=utilization.gpu,memory.used --format=csv"
-
-        3）训练前执行 sudo nvidia-smi -pm 1 启用持久模式
-
-        4）使用nohup后台运行避免ssh中断影响
-        5）添加try-except块捕捉CUDA错误并自动重试
+ pip install torch peft datasets transformers tensorboardX --no-index --find-links=/media/rd/SD2TB/pytorch_env_whl.Python.3.12.3
 """
 import json
 import os
