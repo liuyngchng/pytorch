@@ -12,3 +12,9 @@ nohup.out
 #*.jsonl
 logs
 __pycache__/
+**/*.pt
+**/*.pth
+**/*.png
+**/*.jpg
+**/*.jpeg
+yolo/*
