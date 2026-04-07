@@ -18,3 +18,4 @@ __pycache__/
 **/*.jpg
 **/*.jpeg
 yolo/*
+images/*
