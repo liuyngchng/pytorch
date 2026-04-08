@@ -4,9 +4,10 @@ import ultralytics
 from ultralytics import YOLO
 from ultralytics.data.utils import check_det_dataset
 
-# 加载模型
+# 加载模型，会自动进行模型下载，如果已经下载过，则不会重复下载
+# 也可以手动下载模型，https://github.com/ultralytics/assets/releases/download/v8.4.0/yolo26n.pt
 model = YOLO("yolo26n.pt")
-# 加载数据集
+# 加载数据集，这里可以使用自己已经标注好的数据集合，也可以使用公共数据集
 dataset_path = "/home/rd/Downloads/coco128_with_yaml/coco128.yaml"
 
 try:
@@ -19,12 +20,12 @@ except Exception as e:
     print(f"❌ 数据集验证失败: {e}")
 
 # 训练
-# model.train(
-#     data=dataset_path,
-#     epochs=5,
-#     imgsz=640,
-#     device='cpu'
-# )
+model.train(
+    data=dataset_path,
+    epochs=5,
+    imgsz=640,
+    device='cpu'
+)
 
 
 # 查看模型信息
