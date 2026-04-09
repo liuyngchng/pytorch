@@ -9,7 +9,7 @@ import io
 
 # 1. 读取一个Parquet文件
 df = pd.read_parquet('/home/rd/Downloads/coco/data/train-00027-of-00040-c99041dbf751516d.parquet')
-
+df = df.reset_index(drop=True)
 # 创建必要的文件夹
 os.makedirs('images', exist_ok=True)
 os.makedirs('labels', exist_ok=True)
